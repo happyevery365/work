@@ -16,14 +16,25 @@ Including another URLconf
 """
 
 from django.urls import path
-from .views import get_data, login_view
+from .views import login_view
 from .views import register_user
-from .views import search_product
+from .views import get_goods
+from .views import check_user_preferences
+from .views import save_user_preferences
+from .views import fetchAppImages
+from .views import search
+from .views import get_category
+from .views import send_sms_code
 
 urlpatterns = [
-    path('api/data/', get_data, name='get_data'),
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
     path('api/register/', register_user, name='register_user'),
-    path('api/search_product/', search_product, name='search_product'),
+    path('api/get-goods/', get_goods, name='search_product'),
+    path('api/check-preferences/', check_user_preferences, name='check_user_preferences'),
+    path('api/save-preferences/', save_user_preferences, name='save_user_preferences'),
+    path('api/get-app-images/', fetchAppImages, name='fetch_app_images'),
+    path('api/search/', search, name='search'),
+    path('api/get_category/', get_category, name='get_category'),
+    path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
 ]
 

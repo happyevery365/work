@@ -12,6 +12,16 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
+# 发送邮箱验证码
+EMAIL_HOST = "smtp.qq.com"     # 服务器
+EMAIL_PORT = 25                 # 一般情况下都为25
+EMAIL_HOST_USER = "2519639200@qq.com"     # 账号
+EMAIL_HOST_PASSWORD = "qbistdksorcxdjji"     # （上面保存的授权码）
+EMAIL_USE_TLS = True       # 一般都为False
+EMAIL_FROM = "2519639200@qq.com"      # 邮箱来自
+email_title = '邮箱激活'
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

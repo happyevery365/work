@@ -1,4 +1,16 @@
-const { defineConfig } = require('@vue/cli-service')
-module.exports = defineConfig({
-  transpileDependencies: true
-})
+module.exports = {
+  css: {
+    loaderOptions: {
+      postcss: {
+        postcssOptions: {  // 将 plugins 移入 postcssOptions
+          plugins: [
+            require('postcss-pxtorem')({
+              rootValue: 16,
+              propList: ['*']
+            }),
+          ],
+        },
+      },
+    },
+  },
+};
