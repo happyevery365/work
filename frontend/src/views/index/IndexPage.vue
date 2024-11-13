@@ -149,6 +149,10 @@ export default {
       }
     },
     startCountdown() {
+      if (!this.registerData.email) {
+          this.registerMessage = '邮箱不能为空';
+          return ;
+        }
       if (this.isCountingDown) return;
       this.getVerificationCode();
       this.isCountingDown = true;
@@ -208,9 +212,6 @@ export default {
   }
 };
 </script>
-
-
-
 
 <style scoped>
 .container {

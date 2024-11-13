@@ -21,6 +21,8 @@ EMAIL_USE_TLS = True       # 一般都为False
 EMAIL_FROM = "2519639200@qq.com"      # 邮箱来自
 email_title = '邮箱激活'
 
+CORS_ALLOW_ALL_ORIGINS = True  # 仅用于测试，生产环境下应限制允许的源
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

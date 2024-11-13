@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="page-wrapper">
     <!-- 平台图标展示区域 -->
     <div class="app-icons" v-if="appImages.length">
       <div class="app-icon-item" v-for="(app, index) in appImages" :key="index">
@@ -13,12 +13,15 @@
       <button @click="logout" class="logout-button">退出登录</button>
     </div>
 
-    <div class="search-container">
-    <div class="search-input-wrapper">
-      <input type="text" v-model="searchQuery" placeholder="请输入搜索内容" class="search-input" />
-      <button @click="performSearch" class="search-button">搜索</button>
+    <!-- 搜索框区域 -->
+    <div class="search-background">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <input type="text" v-model="searchQuery" placeholder="请输入搜索内容" class="search-input" />
+          <button @click="performSearch" class="search-button">搜索</button>
+        </div>
+      </div>
     </div>
-  </div>
 
     <!-- 商品展示区域 -->
     <h2>猜您喜欢</h2>
@@ -90,8 +93,9 @@ export default {
         return;
       }
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/search/', { data: this.searchQuery });
-        this.goods = response.data.goods || [];
+        this.$router.push({ name: 'SearchPage', query: { username: this.username ,searchQuery: this.searchQuery } });
+        //const response = await axios.post('http://127.0.0.1:8000/api/search/', { data: this.searchQuery });
+        //this.goods = response.data.goods || [];
       } catch (error) {
         console.error('Error performing search:', error);
       }
@@ -121,6 +125,7 @@ export default {
     },
     logout() {
       localStorage.setItem('token', '');
+      localStorage.setItem('isLoggedIn', 'false'); // 将 isLoggedIn 设置为 false
       this.$router.push({ name: 'IndexPage' });
     }
   },
@@ -132,6 +137,18 @@ export default {
 </script>
 
 <style scoped>
+/* 页面整体背景色 */
+.page-wrapper {
+  background-color: #4682b4; /* 与底部导航栏相同的蓝色 */
+  padding: 0 15px;
+}
+
+/* 搜索框背景色设置 */
+.search-background {
+  background-color: #4682b4; /* 设置搜索框上方背景色 */
+  padding-top: 10px;
+}
+
 /* 平台图标展示样式 */
 .app-icons {
   display: flex;
@@ -140,19 +157,20 @@ export default {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
+  background-color: #4682b4; /* 设置图标背景为蓝色 */
 }
 
 .app-icon-item {
-  flex: 0 1 25%; /* 保证每行显示4个图标 */
-  max-width: 80px; /* 确保图标不超过一定宽度 */
+  flex: 0 1 25%;
+  max-width: 80px;
 }
 
 .app-icon-image {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* 保证图片不被裁剪 */
-  max-width: 60px; /* 控制最大宽度，避免图标过大 */
-  max-height: 60px; /* 控制最大高度 */
+  object-fit: contain;
+  max-width: 60px;
+  max-height: 60px;
 }
 
 /* 搜索框和搜索按钮样式 */
@@ -160,39 +178,34 @@ export default {
   display: flex;
   justify-content: center;
   padding: 10px 15px;
+  background-color: #4682b4; /* 设置与底部导航栏一致的蓝色背景 */
 }
 
 .search-input-wrapper {
-  position: relative;
   display: flex;
-  max-width: 280px; /* 缩小搜索框宽度 */
+  max-width: 280px;
   width: 100%;
 }
 
 .search-input {
-  width: 100%;
+  flex: 1;
   padding: 8px;
   font-size: 16px;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  padding-right: 50px; /* 为按钮留出空间 */
+  border-radius: 4px 0 0 4px; /* 左侧圆角 */
   box-sizing: border-box;
   height: 36px;
 }
 
 .search-button {
-  position: absolute;
-  right: 4px; /* 贴合输入框右侧 */
-  top: 50%;
-  transform: translateY(-50%); /* 垂直居中 */
-  height: 28px; /* 与输入框高度匹配 */
   padding: 0 12px;
   font-size: 14px;
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 4px 4px 0; /* 右侧圆角 */
   cursor: pointer;
+  height: 36px; /* 确保按钮高度与输入框一致 */
 }
 
 .search-button:hover {
@@ -203,9 +216,10 @@ export default {
 /* 用户信息与退出按钮样式 */
 .user-info {
   display: flex;
-  justify-content: space-between; /* "你好，username" 和退出按钮在同一行 */
+  justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
+  background-color: #4682b4; /* 设置用户信息区域背景为蓝色 */
 }
 
 .username {
@@ -239,6 +253,7 @@ export default {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
+  background-color: white;
 }
 
 .product-left {

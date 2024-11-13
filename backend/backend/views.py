@@ -1,5 +1,6 @@
 import random
 
+import pymysql
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db import connection  # 用于执行原始 SQL 查询
@@ -14,6 +15,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from pyquery import PyQuery as pq
+from selenium.webdriver.chrome.options import Options
 
 # 登录处理函数
 @api_view(['POST'])
@@ -254,11 +257,222 @@ def fetchAppImages(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'获取应用图片失败: {str(e)}'})
 
-# 搜索框查询函数
-@api_view(['POST'])
-def search(request):
-
-   return JsonResponse({'success': True})
+# # 修复 ChromeOptions 错误
+# options = Options()  # 使用 Options 替代 ChromeOptions
+# options.add_experimental_option("excludeSwitches", ['enable-automation'])
+# options.add_argument("--disable-blink-features=AutomationControlled")  # 模拟人类用户行为
+# # MySQL 数据库连接配置,根据自己的本地数据库修改
+# db_config = {
+#     'host': 'localhost',
+#     'port': 3306,
+#     'user': 'root',
+#     'password': 'kSY13630945535',
+#     'database': 'django',
+#     'charset': 'utf8mb4',
+# }
+#
+# # 创建 MySQL 连接对象
+# conn = pymysql.connect(**db_config)
+# cursor = conn.cursor()
+#
+# # 把chrome设为selenium驱动的浏览器代理；
+# driver = webdriver.Chrome(options=options)
+# # 在页面加载之前，设置 navigator.webdriver 为 undefined
+# driver.execute_cdp_cmd(
+#     "Page.addScriptToEvaluateOnNewDocument",
+#     {
+#         "source": """
+#         Object.defineProperty(navigator, 'webdriver', {
+#             get: () => undefined
+#         });
+#         """
+#     }
+# )
+# # 窗口最大化
+# driver.maximize_window()
+#
+# def save_to_mysql(result):
+#     try:
+#         # 获取表名
+#         table_name = 'wyh'
+#         # 生成 SQL 语句
+#         sql = f"INSERT INTO {table_name} (price, deal, title, shop, location, postFree, product_url, img_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+#         print(sql)
+#         cursor.execute(sql, (
+#             result['price'],
+#             result['deal'],
+#             result['title'],
+#             result['shop'],
+#             result['location'],
+#             result['isPostFree'],
+#             result['product_url'],
+#             result['img_url']
+#         ))
+#         conn.commit()
+#         print(f'存储到MySQL成功: {result}')
+#     except Exception as e:
+#         print('存储到MySQL出错: ', result, e)
+#
+#
+# # 修改下滑和上滑逻辑
+# def human_like_scroll(direction="down", min_scroll=200, max_scroll=600, min_pause=1, max_pause=3):
+#     """模仿人类行为进行缓慢的滑动。"""
+#     scroll_length = random.randint(min_scroll, max_scroll)
+#     scroll_pause = random.uniform(min_pause, max_pause)
+#     if direction == "up":
+#         scroll_length = -scroll_length  # 上滑设置为负数
+#     driver.execute_script(f"window.scrollBy(0, {scroll_length});")
+#     time.sleep(scroll_pause)  # 随机暂停
+#
+#
+# def scroll_to_top():
+#     """模仿人类缓慢地滑动到页面顶部。"""
+#     current_position = driver.execute_script("return window.scrollY;")
+#     while current_position > 0:
+#         # 每次上滑一小段距离，模拟人类的缓慢滑动
+#         scroll_amount = random.randint(100, 300)
+#         driver.execute_script(f"window.scrollBy(0, {-scroll_amount});")
+#         time.sleep(random.uniform(0.5, 1.5))  # 每次滑动后暂停
+#         current_position = driver.execute_script("return window.scrollY;")
+#     print("已返回页面顶部")
+#
+# def random_sleep(timeS, timeE):
+#     # 生成一个S到E之间的随机等待时间
+#     random_sleep_time = random.uniform(timeS, timeE)
+#     time.sleep(random_sleep_time)
+#
+#
+# # 搜索框查询函数
+# @api_view(['POST'])
+# def search(request):
+#     searchQuery = request.data.get('searchQuery')
+#     driver = webdriver.Chrome()
+#     url = f"https://s.taobao.com/search?q={searchQuery}"
+#     driver.get(url)
+#     count = 1  # 从 data-spm=1 开始逐一抓取商品
+#     # 循环点击“下一页”按钮，爬取多个页面
+#     for page in range(5):
+#         print(f"正在抓取第 {page + 1} 页内容...")
+#         index = 1  # data-spm 从 1 开始
+#         random_sleep(2, 4)  # 随机休眠模拟人类操作
+#
+#         start_time = time.time()  # 记录查找的开始时间
+#
+#         # 不断查找当前页面的数据
+#         while True:
+#             html = driver.page_source
+#             doc = pq(html)
+#             item = doc(f'a[data-spm="{index}"]')
+#
+#             if item:
+#                 # 找到目标元素时可以对其进行操作
+#                 print(f"找到 data-spm 为 {index} 的商品")
+#                 # 提取商品信息
+#                 title = item.find('.title--qJ7Xg_90 span').text()
+#                 product_url = item.attr('href')
+#
+#                 # 等待图片 src 出现，如果没有出现则下滑页面
+#                 img_url = None
+#                 img_element = item.find('.mainPicWrapper--qRLTAeii img')
+#                 max_wait_time = 5  # 最大等待时间（秒）
+#                 wait_time = 0  # 当前等待时间
+#
+#                 while not img_url and wait_time < max_wait_time:
+#                     img_url = img_element.attr('src')
+#                     if not img_url:
+#                         print(f"图片 src 未加载，等待 {wait_time + 1} 秒后再尝试...")
+#                         time.sleep(1)
+#                         # 随机下滑像素
+#                         scroll_pixels = random.randint(400, 600)
+#                         driver.execute_script(f"window.scrollBy(0, {scroll_pixels});")
+#                         wait_time += 1
+#                         html = driver.page_source
+#                         doc = pq(html)
+#                         item = doc(f'a[data-spm="{index}"]')  # 更新 item 元素
+#                         img_element = item.find('.mainPicWrapper--qRLTAeii img')  # 重新获取图片元素
+#
+#                 if not img_url:  # 如果图片 src 依然未加载，则设置为空
+#                     img_url = ''
+#
+#                 try:
+#                     # 提取价格，支持包含非数字字符的情况
+#                     price_int = item.find('.priceInt--yqqZMJ5a').text() or ""
+#                     price_float = item.find('.priceFloat--XpixvyQ1').text() or ""
+#
+#                     # 拼接 price 为字符串
+#                     price = f"{price_int}.{price_float}" if price_float else price_int
+#
+#                     # 如果价格中有两个连续的小数点，则去掉一个
+#                     if '..' in price:
+#                         price = price.replace('..', '.')
+#
+#                     print(f"处理后的价格: {price}")
+#
+#                 except Exception as e:
+#                     print(f"价格处理错误: {e}")
+#                     price = ""
+#
+#                 # 其他信息
+#                 deal = item.find('.realSales--XZJiepmt').text()
+#                 location = item.find('.procity--wlcT2xH9').text()
+#                 shop = item.find('.shopInfo--Kmh31boz').text().replace("旺旺在线", "").strip()  # 去除旺旺在线
+#                 # 检查 subIconWrapper--V18zAdQn 的 title 属性中是否包含“包邮”
+#                 post_icon = item.find('.subIconWrapper--Vl8zAdQn ')
+#                 post_text = post_icon.attr('title') if post_icon else ""
+#                 print(post_text)
+#                 isPostFree = 1 if "包邮" in post_text else 0
+#
+#                 # 构建商品数据字典
+#                 product = {
+#                     'title': title,
+#                     'price': price,
+#                     'deal': deal,
+#                     'location': location,
+#                     'shop': shop,
+#                     'isPostFree': isPostFree,
+#                     'product_url': product_url,
+#                     'img_url': img_url
+#                 }
+#
+#                 # 调用写入数据库的函数
+#                 save_to_mysql(product)
+#
+#                 print(f"商品 {index} 已成功抓取并保存到数据库：{product}")
+#                 index += 1  # 商品计数器
+#
+#                 # 当达到 100 个商品时退出抓取
+#                 if count >= 101:
+#                     break
+#                 if index >= 101:
+#                     break
+#             else:
+#                 # 未找到元素时进行下滑，检查是否超时
+#                 if time.time() - start_time > 5:
+#                     print("超过 5 秒未找到 data-spm 元素，跳转到下一页")
+#                     next_button = WebDriverWait(driver, 10).until(
+#                         EC.element_to_be_clickable(
+#                             (By.CSS_SELECTOR, ".next-btn.next-medium.next-btn-normal.next-pagination-item.next-next"))
+#                     )
+#                     time.sleep(2)
+#                     if next_button:
+#                         next_button.click()
+#                         print(f"已点击第 {page + 1} 页的“下一页”按钮")
+#                         count += index
+#                         time.sleep(3)  # 确保页面加载
+#                         break  # 跳出当前页面的查找循环
+#                     else:
+#                         print("未找到‘下一页’按钮，结束爬取")
+#
+#                 print(f"未找到 data-spm 为 {index} 的商品，正在下滑页面...")
+#                 human_like_scroll(direction="down")  # 调用模拟人类下滑的函数
+#                 time.sleep(1)  # 等待页面加载
+#                 # 更新页面HTML并再次检查目标元素
+#                 html = driver.page_source
+#                 doc = pq(html)
+#                 item = doc(f'a[data-spm="{index}"]')
+#
+#     # 关闭浏览器
+#     driver.quit()
 
 
 @api_view(['POST'])

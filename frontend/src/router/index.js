@@ -4,6 +4,7 @@ import PreferencesPage from '../views/index/PreferencesPage.vue';
 import GoodsPage from '../views/index/GoodsPage.vue';  // 新增商品展示页面
 import Product_Categories from '../views/index/Product_Categories';
 import CategoryPage from '../views/index/CategoryPage';
+import SearchPage from '../views/index/SearchPage';
 
 const routes = [
   {
@@ -33,6 +34,12 @@ const routes = [
     path: '/CategoryPage',
     name: 'CategoryPage',
     component: CategoryPage,  // 商品分类页面
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/SearchPage',
+    name: 'SearchPage',
+    component: SearchPage,  // 商品分类页面
     meta: { requiresAuth: true },
   },
 ];
