@@ -11,9 +11,11 @@
     "add": "^2.0.6",
     "amfe-flexible": "^2.2.1",
     "axios": "^1.7.7",
+    "chart.js": "^4.4.6",
     "core-js": "^3.8.3",
     "postcss-pxtorem": "5.1.1",
     "vue": "^3.2.13",
+    "vue-chartjs": "^5.3.2",
     "vue-router": "^4.4.5"
   },
   "devDependencies": {

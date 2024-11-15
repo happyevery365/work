@@ -1,19 +1,19 @@
 <template>
   <div class="container">
-    <h1 class="title"><span>Mr. K的比价APP</span></h1>
+    <h1 class="title"><span>Mr. K的比价网页</span></h1>
     <div class="auth-box">
       <div class="auth-tabs">
         <div :class="{ activeTab: isLogin }" @click="switchToLogin">登录</div>
         <div :class="{ activeTab: !isLogin }" @click="switchToRegister">注册</div>
       </div>
       <div v-if="isLogin" class="login-area">
-        <p>{{ loginMessage }}</p>
+        <p class="error-message">{{ loginMessage }}</p>
         <input v-model="loginData.username" placeholder="用户名" class="auth-input" />
         <input v-model="loginData.password" type="password" placeholder="密码" class="auth-input" />
         <div class="auth-action" @click="login">登录</div>
       </div>
       <div v-else class="register-area">
-        <p>{{ registerMessage }}</p>
+        <p class="error-message">{{ registerMessage }}</p>
         <p v-if="passwordMismatch" class="error-message">两次输入的密码不一致</p>
         <p v-if="emptyPassword" class="error-message">请输入密码</p>
         <p v-if="emptyEmail" class="error-message">请输入邮箱</p>
@@ -98,7 +98,7 @@ export default {
     },
     async login() {
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/login/', {
+        const response = await axios.post('http://192.168.117.146:8000/api/login/', {
           username: this.loginData.username,
           password: this.loginData.password
         });
@@ -117,7 +117,7 @@ export default {
     },
     async checkUserPreferences() {
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/check-preferences/', {
+        const response = await axios.post('http://192.168.117.146:8000/api/check-preferences/', {
           username: this.loginData.username,
         });
         if (response.data.has_preferences) {
@@ -135,7 +135,7 @@ export default {
         if (!this.registerData.email) {
           this.registerMessage = '邮箱不能为空';
         } else {
-          const response = await axios.post('http://127.0.0.1:8000/api/send_sms_code/', {
+          const response = await axios.post('http://192.168.117.146:8000/api/send_sms_code/', {
             to_email: this.registerData.email,
           });
           if (response.data.ifsend) {
@@ -150,9 +150,9 @@ export default {
     },
     startCountdown() {
       if (!this.registerData.email) {
-          this.registerMessage = '邮箱不能为空';
-          return ;
-        }
+        this.registerMessage = '邮箱不能为空';
+        return;
+      }
       if (this.isCountingDown) return;
       this.getVerificationCode();
       this.isCountingDown = true;
@@ -196,12 +196,18 @@ export default {
       }
 
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/register/', {
+        const response = await axios.post('http://192.168.117.146:8000/api/register/', {
           username: this.registerData.username,
           password: this.registerData.password,
           email: this.registerData.email
         });
         this.registerMessage = response.data.message;
+        if (this.registerMessage === "注册成功") {
+        // 等待两秒后调用 switchToLogin()
+            setTimeout(() => {
+                this.switchToLogin();
+            }, 2000);  // 2000 毫秒，即两秒
+        }
       } catch (error) {
         this.registerMessage = '注册失败';
       }
@@ -218,21 +224,25 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  height: 100vh; /* 使容器占满屏幕 */
+  width: 100%; /* 占据整个屏幕宽度 */
   padding: 10px;
+  box-sizing: border-box;
 }
 
 .title {
-  font-size: 18px;
+  font-size: 15px; /* 缩小标题字体 */
   font-weight: bold;
   color: #4682b4;
   text-shadow: 1px 1px #add8e6;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
 .auth-box {
-  width: 70%;
-  max-width: 400px;
+  width: 60%;
+  max-width: 320px; /* 设置更小的最大宽度 */
   padding: 16px;
   border: 2px solid #ddd;
   border-radius: 8px;
@@ -241,125 +251,60 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 0 auto; /* 确保框居中 */
 }
 
 .auth-tabs {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  margin-bottom: 15px;
+  margin-bottom: 1px;
 }
 
 .auth-tabs div {
-  width: 40%;
-  padding: 5px;
-  font-size: 12px;
+  width: 45%;
+  padding: 4px 0;
   text-align: center;
   cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f9fdfd;
-  transition: background-color 0.3s;
+  font-size: 12px;  /* 调整字体大小 */
 }
 
 .auth-tabs .activeTab {
-  background-color: #4682b4;
-  color: white;
+  font-weight: bold;
+  color: #4682b4;
 }
 
 .auth-input {
-  display: flex;
-  width: 80%;
-  max-width: 220px; /* 缩短输入框的宽度 */
-  margin: 6px auto;
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ccc;
+  width: 100%;
+  max-width: 280px;
+  padding: 4px;
+  margin: 2px 0;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  text-align: center;
-  background-color: #f0f8ff;
-}
-
-.verification-wrapper {
-  display: flex;
-  align-items: center;
-  width: 80%;
-  max-width: 250px;
-  margin: 6px auto;
-}
-
-.verification-input {
-  flex: 2; /* 输入框稍微占多一些宽度 */
-  margin-right: 8px;
-}
-
-.verification-button {
-  flex: 1;
-  height: 40px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #4682b4;
-  color: white;
-  font-size: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.verification-button:hover {
-  background-color: #5f9ea0;
+  box-sizing: border-box;
 }
 
 .auth-action {
-  width: 60%;
-  max-width: 180px;
-  padding: 8px;
-  font-size: 14px;
+  width: 30%;
+  max-width: 280px;
+  padding: 2px;
   text-align: center;
-  color: white;
   background-color: #4682b4;
-  border: 1px solid #4682b4;
+  color: white;
   border-radius: 4px;
   cursor: pointer;
-  margin: 10px auto;
+  margin: 0 auto;
   transition: background-color 0.3s;
+  font-size: 10px; /* 缩小按钮的字体 */
+  margin-top: 10px; /* 增加登录按钮和搜索框的间距 */
 }
 
 .auth-action:hover {
-  background-color: #5f9ea0;
+  background-color: #365f7d;
 }
 
 .error-message {
   color: red;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-@media (max-width: 480px) {
-  .title {
-    font-size: 14px;
-  }
-
-  .auth-box {
-    padding: 10px;
-    max-width: 260px;
-  }
-
-  .auth-tabs div {
-    font-size: 10px;
-    padding: 3px;
-  }
-
-  .auth-input {
-    font-size: 12px;
-    padding: 5px;
-  }
-
-  .auth-action {
-    font-size: 12px;
-    padding: 5px;
-  }
+  font-size: 8px;
 }
 </style>

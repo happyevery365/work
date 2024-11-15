@@ -25,6 +25,9 @@ from .views import fetchAppImages
 # from .views import search
 from .views import get_category
 from .views import send_sms_code
+from .views import starGood
+from .views import notStarGood
+from .views import fetchPriceData
 
 urlpatterns = [
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
@@ -33,8 +36,11 @@ urlpatterns = [
     path('api/check-preferences/', check_user_preferences, name='check_user_preferences'),
     path('api/save-preferences/', save_user_preferences, name='save_user_preferences'),
     path('api/get-app-images/', fetchAppImages, name='fetch_app_images'),
+    path('api/starGood/', starGood, name='starGood'),
+    path('api/notStarGood/', notStarGood, name='notStarGood'),
     # path('api/search/', search, name='search'),
     path('api/get_category/', get_category, name='get_category'),
     path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
+    path('api/fetchPriceData/', fetchPriceData, name='fetchPriceData'),
 ]
 

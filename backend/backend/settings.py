@@ -16,7 +16,7 @@ from pathlib import Path
 EMAIL_HOST = "smtp.qq.com"     # 服务器
 EMAIL_PORT = 25                 # 一般情况下都为25
 EMAIL_HOST_USER = "2519639200@qq.com"     # 账号
-EMAIL_HOST_PASSWORD = "qbistdksorcxdjji"     # （上面保存的授权码）
+EMAIL_HOST_PASSWORD = "ornbnlnvkcjmeabe"     # （上面保存的授权码）
 EMAIL_USE_TLS = True       # 一般都为False
 EMAIL_FROM = "2519639200@qq.com"      # 邮箱来自
 email_title = '邮箱激活'
@@ -37,7 +37,7 @@ SECRET_KEY = "django-insecure-a4bgi^7#3!bb%#9y9+s716&n!%oxpxi-81rgfpy@^+t)d^x6v7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -152,4 +152,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:8080',
+    'http://192.168.117.146:8080',  # 如果前端使用这个IP
+    'http://10.193.226.64:8080',  # 如果前端使用这个IP
+
 ]

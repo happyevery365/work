@@ -1,16 +1,22 @@
 <template>
   <div class="preferences-container">
-    <h2>请选择您的喜好</h2>
+    <h2>选择您的喜好</h2>
+
+    <!-- 使用一个容器来包裹每行的按钮 -->
     <div class="categories-grid">
-      <button
-        v-for="category in categories"
-        :key="category"
-        :class="['category-item', { selected: isSelected(category) }]"
-        @click="toggleSelection(category)"
-      >
-        {{ category }}
-      </button>
+      <!-- 将类别分成每行最多4个 -->
+      <div class="category-row" v-for="(row, index) in categoryRows" :key="index">
+        <button
+          v-for="subCategory in row"
+          :key="subCategory"
+          :class="['category-item', { selected: isSelected(subCategory) }]"
+          @click="toggleSelection(subCategory)"
+        >
+          {{ subCategory }}
+        </button>
+      </div>
     </div>
+
     <button class="confirm-button" @click="savePreferences">确认选择</button>
   </div>
 </template>
@@ -28,7 +34,7 @@ export default {
         "童装", "玩具", "宠物", "美妆", "个户", "家清", "香氛", "娱乐", "图书", "乐器", "鲜花"
       ],
       selectedPreferences: [], // 用户选择的喜好
-      username: '' // 用户名变量
+      username: '', // 用户名变量
     };
   },
   created() {
@@ -36,6 +42,16 @@ export default {
     if (username) {
       this.username = username;
       console.log("用户登录的用户名:", this.username);
+    }
+  },
+  computed: {
+    // 计算每行最多显示四个类别的行
+    categoryRows() {
+      let rows = [];
+      for (let i = 0; i < this.categories.length; i += 4) {
+        rows.push(this.categories.slice(i, i + 4));  // 每行取四个类别
+      }
+      return rows;
     }
   },
   methods: {
@@ -52,7 +68,7 @@ export default {
     },
     async savePreferences() {
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/save-preferences/', {
+        const response = await axios.post('http://192.168.117.146:8000/api/save-preferences/', {
           username: this.username,
           preferences: this.selectedPreferences
         });
@@ -79,23 +95,31 @@ export default {
 
 h2 {
   color: #4682b4;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  font-size: 12px;
 }
 
 .categories-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   justify-items: center;
   padding: 10px;
 }
 
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 .category-item {
-  padding: 10px;
-  font-size: 16px;
+  padding: 2px;
+  font-size: 8px;
   color: #4682b4;
   background-color: white;
-  border: 2px solid #4682b4;
+  border: 1px solid #4682b4;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
@@ -107,18 +131,17 @@ h2 {
 }
 
 .confirm-button {
-  margin-top: 20px;
+  margin-top: 10px;
   background-color: #4682b4;
   color: white;
-  padding: 10px 20px;
+  padding: 2px 5px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 8px;
 }
 
 .confirm-button:hover {
   background-color: #36648b;
 }
-
 </style>

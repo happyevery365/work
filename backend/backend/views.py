@@ -1,4 +1,7 @@
+import base64
+import io
 import random
+import matplotlib.pyplot as plt
 
 import pymysql
 from rest_framework.decorators import api_view
@@ -17,6 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from pyquery import PyQuery as pq
 from selenium.webdriver.chrome.options import Options
+import os
 
 # 登录处理函数
 @api_view(['POST'])
@@ -133,7 +137,7 @@ category_to_table = {
 
 @api_view(['POST'])
 def get_goods(request):
-    username = request.data.get('data')
+    username = request.data.get('username')
 
     if not username:
         return Response({"error": "Username is required"}, status=400)
@@ -516,3 +520,109 @@ def get_category(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+@api_view(['POST'])
+def starGood(request):
+
+    return True
+
+@api_view(['POST'])
+def notStarGood(request):
+    return True
+
+from flask import Flask, request, jsonify
+import time
+import json
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+app = Flask(__name__)
+
+# 设置 Chrome 启动选项
+chrome_options = Options()
+# chrome_options.add_argument("--headless")  # 如果你不想打开浏览器界面，可以启用这一行
+cookie_file = 'cookie_manmanbuy.txt'
+
+
+# 获取历史价格数据并返回图表
+@api_view(['POST'])
+def fetchPriceData(request):
+    product_url = request.data.get('product_url')  # 使用 request.data 获取 POST 数据
+
+    # 创建 WebDriver 实例
+    driver = webdriver.Chrome(options=chrome_options)
+
+    # 如果 cookie 文件不存在，则执行登录操作
+    if not os.path.exists(cookie_file):
+        driver.get('https://home.manmanbuy.com/login.aspx')
+        time.sleep(60)
+        cookies = driver.get_cookies()
+        with open(cookie_file, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_manmanbuy.txt")
+    else:
+        print("cookie_manmanbuy.txt 已存在，跳过登录步骤。")
+        driver.get('https://home.manmanbuy.com/login.aspx')
+        time.sleep(2)
+        with open(cookie_file, 'r') as f:
+            cookies = json.load(f)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
+
+    # 打开商品历史价格页面
+    driver.get(f'http://tool.manmanbuy.com/HistoryLowest.aspx?url={product_url}')
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+    time.sleep(10)
+    # 获取页面内容并解析
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # 提取历史价格数据
+    divs = soup.find_all('div', {'style': 'border-left:2px dashed #b1afaf;padding-top:25px;margin-left:15px;'})
+    price_history = []
+    for div in divs:
+        date_div = div.find('div', style=lambda value: value and 'font-size:larger' in value)
+        if date_div:
+            date = date_div.get_text(strip=True)
+            price_div = div.find('div', style=lambda value: value and 'color:#ff4400' in value)
+            if price_div:
+                price = price_div.get_text(strip=True).replace("¥", "")
+                price_history.append({"date": date, "price": price})
+
+    driver.quit()
+
+    # 如果没有找到历史价格数据
+    if not price_history:
+        return JsonResponse({'success': False, 'message': '没有找到历史价格数据'})
+
+    # 提取价格和日期数据，用于绘图
+    dates = [entry['date'] for entry in price_history]
+    prices = [float(entry['price']) for entry in price_history]
+
+    # 创建图表
+    plt.figure(figsize=(10, 5))
+    plt.plot(dates, prices, marker='o', color='b', linestyle='-', label='价格')
+    plt.title('商品价格历史走势')
+    plt.xlabel('日期')
+    plt.ylabel('价格 (元)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    # 保存图片到本地
+    plt.savefig('price_history.png', dpi=300, bbox_inches='tight')  # 设定保存路径和文件格式
+
+    # 将图表保存到内存
+    img_io = io.BytesIO()
+    plt.savefig(img_io, format='png')
+    img_io.seek(0)
+
+    # 将图像转换为 Base64 编码的字符串
+    img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+
+    # 返回图像的 Base64 编码
+    return JsonResponse({'success': True, 'image_data': img_base64})

@@ -79,7 +79,7 @@ export default {
   methods: {
     async fetchProducts() {
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/get_category/', { data: this.englishName });
+        const response = await axios.post('http://192.168.117.146:8000/api/get_category/', {data: this.englishName});
         this.products = response.data.goods;
       } catch (error) {
         console.error("Failed to fetch products:", error);
@@ -89,7 +89,7 @@ export default {
       window.open(url, '_blank'); // Open the product URL in a new tab
     },
     goBack() {
-      this.$router.push({ name: 'Product_Categories', query: { username: this.username } });
+      this.$router.push({name: 'Product_Categories', query: {username: this.username}});
     },
     togglePlatform(platform) {
       // Toggle the selected platform
@@ -146,8 +146,9 @@ export default {
 /* 商品展示区域样式 */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* 设置每行显示两个商品 */
   gap: 16px;
+  margin-top: 20px;
 }
 
 .product-item {
@@ -155,16 +156,34 @@ export default {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .product-image {
   width: 100%;
   height: auto;
   margin-bottom: 8px;
+  border-radius: 8px;
 }
 
 .product-info p {
   margin: 4px 0;
   font-size: 14px;
+}
+
+.product-button {
+  background-color: #007bff;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.product-button:hover {
+  background-color: #0056b3;
 }
 </style>

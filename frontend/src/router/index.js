@@ -5,6 +5,7 @@ import GoodsPage from '../views/index/GoodsPage.vue';  // 新增商品展示页�
 import Product_Categories from '../views/index/Product_Categories';
 import CategoryPage from '../views/index/CategoryPage';
 import SearchPage from '../views/index/SearchPage';
+import DetailPage from '../views/index/DetailPage';
 
 const routes = [
   {
@@ -15,33 +16,39 @@ const routes = [
   {
     path: '/goods',
     name: 'GoodsPage',
-    component: GoodsPage,  // 商品展示页面
+    component: GoodsPage,
     meta: { requiresAuth: true },
   },
   {
     path: '/PreferencesPage',
     name: 'PreferencesPage',
-    component: PreferencesPage,  // 商品展示页面
+    component: PreferencesPage,
     meta: { requiresAuth: true },
   },
   {
     path: '/Product_Categories',
     name: 'Product_Categories',
-    component: Product_Categories,  // 商品分类页面
+    component: Product_Categories,
     meta: { requiresAuth: true },
   },
   {
     path: '/CategoryPage',
     name: 'CategoryPage',
-    component: CategoryPage,  // 商品分类页面
+    component: CategoryPage,
     meta: { requiresAuth: true },
   },
   {
     path: '/SearchPage',
     name: 'SearchPage',
-    component: SearchPage,  // 商品分类页面
+    component: SearchPage,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/DetailPage',
+    name: 'DetailPage',
+    component: DetailPage,
+    meta: { requiresAuth: true },
+  }
 ];
 
 const router = createRouter({
