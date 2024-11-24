@@ -22,7 +22,7 @@ from .views import get_goods
 from .views import check_user_preferences
 from .views import save_user_preferences
 from .views import fetchAppImages
-# from .views import search
+from .views import search
 from .views import get_category
 from .views import send_sms_code
 from .views import starGood
@@ -38,7 +38,7 @@ urlpatterns = [
     path('api/get-app-images/', fetchAppImages, name='fetch_app_images'),
     path('api/starGood/', starGood, name='starGood'),
     path('api/notStarGood/', notStarGood, name='notStarGood'),
-    # path('api/search/', search, name='search'),
+    path('api/search/', search, name='search'),
     path('api/get_category/', get_category, name='get_category'),
     path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
     path('api/fetchPriceData/', fetchPriceData, name='fetchPriceData'),

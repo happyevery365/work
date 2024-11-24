@@ -34,23 +34,16 @@
         天猫
       </div>
     </div>
-
-    <!-- 商品展示区域 -->
-    <div class="products-grid">
-      <div v-for="product in products" :key="product.id" class="product-item">
-        <img :src="product.img_url" alt="Product Image" class="product-image" />
-        <div class="product-info">
-          <p class="product-title">{{ product.title }}</p>
-          <p class="product-price">Price: {{ product.price }}</p>
-          <p class="product-deal">Deal: {{ product.deal }}</p>
-          <p class="product-shop">Shop: {{ product.shop }}</p>
-          <p class="product-location">Location: {{ product.location }}</p>
-          <button @click="goToProduct(product.product_url)" class="product-button">
-            点此查看
-          </button>
-        </div>
+  <div v-if="goods.length" class="products-grid">
+    <div class="product-item" v-for="(item, index) in goods" :key="index" @click="goToDetailPage(item)">
+      <img :src="item.img_url" alt="商品图片" class="product-image" />
+      <div class="product-details">
+        <p class="product-title">{{ item.title }}</p>
+        <p class="product-price">价格: {{ item.price }}</p>
       </div>
     </div>
+  </div>
+  <p v-else>暂无商品信息</p>
   </div>
 </template>
 
@@ -63,6 +56,7 @@ export default {
       products: [],
       englishName: '',
       username: '',
+      goods: [],
       selectedPlatform: {
         TaoBao: false,
         JingDong: false,
@@ -80,13 +74,10 @@ export default {
     async fetchProducts() {
       try {
         const response = await axios.post('http://192.168.117.146:8000/api/get_category/', {data: this.englishName});
-        this.products = response.data.goods;
+        this.goods = response.data.goods;
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }
-    },
-    goToProduct(url) {
-      window.open(url, '_blank'); // Open the product URL in a new tab
     },
     goBack() {
       this.$router.push({name: 'Product_Categories', query: {username: this.username}});
@@ -94,6 +85,15 @@ export default {
     togglePlatform(platform) {
       // Toggle the selected platform
       this.selectedPlatform[platform] = !this.selectedPlatform[platform];
+    },
+    goToDetailPage(item) {
+      // 构造目标页面 URL
+    const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(
+      this.username
+    )}&product=${encodeURIComponent(JSON.stringify(item))}`;
+
+    // 在新窗口中打开目标页面
+    window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口;
     }
   }
 };
@@ -143,47 +143,37 @@ export default {
   border-color: orange;
 }
 
-/* 商品展示区域样式 */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 设置每行显示两个商品 */
-  gap: 16px;
-  margin-top: 20px;
+  gap: 4vw;
+  grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
 }
 
 .product-item {
+  background-color: white;
+  border-radius: 2vw;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 3vw;
   text-align: center;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .product-image {
   width: 100%;
   height: auto;
-  margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: 2vw;
 }
 
-.product-info p {
-  margin: 4px 0;
-  font-size: 14px;
+.product-details {
+  margin-top: 2vw;
 }
 
-.product-button {
-  background-color: #007bff;
-  color: white;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
+.product-title {
+  font-size: 4vw;
+  font-weight: bold;
 }
 
-.product-button:hover {
-  background-color: #0056b3;
+.product-price {
+  font-size: 4vw;
+  color: #333;
 }
 </style>

@@ -1,7 +1,5 @@
 <template>
   <div class="detail-page">
-    <!-- 返回按钮 -->
-    <div class="back-button" @click="goBack">＜</div>
     <p>   </p>
     <div class="product-info">
       <div class="product-image">
@@ -55,9 +53,6 @@ export default {
     this.fetchPriceChart();
   },
   methods: {
-    goBack() {
-      this.$router.push({name: 'GoodsPage', query: {username: this.username}});  // 返回到 GoodsPage 页面
-    },
     toggleStar() {
       if (this.isStarred) {
         this.unstarProduct();

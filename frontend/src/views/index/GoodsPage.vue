@@ -99,13 +99,13 @@ export default {
       this.currentPage = page;
     },
     goToDetailPage(item) {
-      this.$router.push({
-        name: 'DetailPage',
-        query: {
-          username: this.username,
-          product: JSON.stringify(item) // 将商品信息以 JSON 字符串形式传递
-        }
-      });
+      // 构造目标页面 URL
+    const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(
+      this.username
+    )}&product=${encodeURIComponent(JSON.stringify(item))}`;
+
+    // 在新窗口中打开目标页面
+    window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口
     },
     logout() {
       localStorage.setItem('token', '');

@@ -131,30 +131,41 @@ export default {
       }
     },
     async getVerificationCode() {
-      try {
-        if (!this.registerData.email) {
-          this.registerMessage = '邮箱不能为空';
-        } else {
-          const response = await axios.post('http://192.168.117.146:8000/api/send_sms_code/', {
-            to_email: this.registerData.email,
-          });
-          if (response.data.ifsend) {
-            this.registerData.verifycode = response.data.sms_code;
-          } else {
-            this.registerMessage = '验证码发送失败';
-          }
-        }
-      } catch (error) {
-        this.registerMessage = '请求失败，请稍后再试';
+  try {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 邮箱格式的正则表达式
+
+    if (!this.registerData.email) {
+      this.registerMessage = '邮箱不能为空';
+    } else if (!emailRegex.test(this.registerData.email)) {
+      this.registerMessage = '请检查邮箱格式'; // 邮箱格式错误提示
+    } else {
+      const response = await axios.post('http://192.168.117.146:8000/api/send_sms_code/', {
+        to_email: this.registerData.email,
+      });
+      if (response.data.ifsend) {
+        this.registerData.verifycode = response.data.sms_code;
+      } else {
+        this.registerMessage = '验证码发送失败';
       }
-    },
+    }
+  } catch (error) {
+    this.registerMessage = '请求失败，请稍后再试';
+  }
+},
     startCountdown() {
       if (!this.registerData.email) {
         this.registerMessage = '邮箱不能为空';
         return;
       }
       if (this.isCountingDown) return;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 邮箱格式的正则表达式
+
+      if (!emailRegex.test(this.registerData.email)) {
+        this.registerMessage = '请检查邮箱格式'; // 邮箱格式错误提示
+        return ;
+      }
       this.getVerificationCode();
+      this.registerMessage = '';
       this.isCountingDown = true;
       this.countdown = 60;
       this.timer = setInterval(() => {

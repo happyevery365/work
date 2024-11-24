@@ -1,114 +1,135 @@
 <template>
-  <div class="search-page">
-    <!-- 显示搜索结果或者提示用户登录 -->
-    <div v-if="isLoggedIn">
-      <h2>搜索结果</h2>
-      <div class="embedded-taobao">
-        <!-- 使用 iframe 嵌入淘宝搜索页面 -->
-        <iframe
-          :src="taobaoUrl"
-          frameborder="0"
-          class="taobao-iframe"
-        ></iframe>
+  <div>
+    <!-- 返回按钮 -->
+    <button @click="goBack" class="back-button">返回</button>
+    <!-- 商品展示 -->
+    <div v-if="goods.length" class="products-grid">
+      <div class="product-item" v-for="(item, index) in goods" :key="index" @click="goToDetailPage(item)">
+        <img :src="item.img_url" alt="商品图片" class="product-image" />
+        <div class="product-details">
+          <p class="product-title">{{ item.title }}</p>
+          <p class="product-price">价格: {{ item.price }}</p>
+        </div>
       </div>
     </div>
-    <div v-else>
-      <!-- 显示用户确认登录按钮 -->
-      <h2>请确认您已经登录淘宝</h2>
-      <p>请点击下方按钮确认登录。</p>
-      <button @click="confirmLogin">我已经确认登录淘宝</button>
-      <div class="embedded-taobao-login">
-        <iframe
-          src="https://login.taobao.com/member/login.jhtml"
-          frameborder="0"
-          class="taobao-iframe"
-        ></iframe>
-      </div>
-    </div>
+    <p v-else>正在搜索</p>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      searchQuery: this.$route.query.searchQuery || '',
-      isLoggedIn: false,  // 用户登录状态
+      goods: [],
+      username: '',
+      searchQuery: ''
     };
   },
-  computed: {
-    taobaoUrl() {
-      // 将搜索关键字编码到淘宝搜索 URL 中
-      return `https://s.taobao.com/search?q=${encodeURIComponent(this.searchQuery)}`;
-    },
+  created() {
+    const savedState = sessionStorage.getItem('GoodsPageState');
+    if (savedState) {
+      // 如果有保存的状态，从 sessionStorage 恢复
+      const { goods, searchQuery, username } = JSON.parse(savedState);
+      this.goods = goods;
+      this.searchQuery = searchQuery;
+      this.username = username;
+    } else {
+      // 初始化页面
+      this.searchQuery = this.$route.query.searchQuery;
+      this.username = this.$route.query.username;
+      this.SearchProducts();
+    }
   },
   methods: {
-    confirmLogin() {
-      // 当用户点击按钮时，记录登录状态并显示搜索结果
-      this.isLoggedIn = true;  // 假设用户已经登录
-      localStorage.setItem('isLoggedIn', 'true'); // 记录登录状态
-    },
+    async SearchProducts() {
+      try {
+        const response = await axios.post('http://192.168.117.146:8000/api/search/', {
+          searchQuery: this.searchQuery,
+          username: this.username
+        });
+        this.goods = response.data.goods;
 
-    checkLoginStatus() {
-      // 检查 localStorage 中是否存在登录状态
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      if (loggedIn) {
-        this.isLoggedIn = true; // 如果已记录为登录状态，直接显示搜索结果
+        // 保存状态到 sessionStorage
+        this.savePageState();
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
       }
     },
-  },
-  mounted() {
-    // 检查是否已记录登录状态
-    this.checkLoginStatus();
-  },
+    goBack() {
+      this.$router.push({ name: 'GoodsPage', query: { username: this.username } });
+    },
+    goToDetailPage(item) {
+      // 构造目标页面 URL
+    const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(
+      this.username
+    )}&product=${encodeURIComponent(JSON.stringify(item))}`;
+
+    // 在新窗口中打开目标页面
+    window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口
+    },
+    savePageState() {
+      const state = {
+        goods: this.goods,
+        searchQuery: this.searchQuery,
+        username: this.username
+      };
+      sessionStorage.setItem('GoodsPageState', JSON.stringify(state));
+    }
+  }
 };
 </script>
 
+
 <style scoped>
-.search-page {
-  padding: 20px;
-}
-
-.embedded-taobao {
-  margin-top: 20px;
-  width: 100%;
-  height: 500px;
-  border: 1px solid #ddd;
-}
-
-.taobao-iframe {
-  width: 100%;
-  height: 100%;
-}
-
-.embedded-taobao-login {
-  margin-top: 20px;
-  width: 100%;
-  height: 500px;
-  border: 1px solid #ddd;
-}
-
-h2 {
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-p {
-  font-size: 18px;
-  color: #333;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #4CAF50;
+/* 返回按钮样式 */
+.back-button {
+  background-color: #007bff;
   color: white;
+  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
+  margin-bottom: 20px;
 }
 
-button:hover {
-  background-color: #45a049;
+.back-button:hover {
+  background-color: #0056b3;
+}
+
+
+.products-grid {
+  display: grid;
+  gap: 4vw;
+  grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+}
+
+.product-item {
+  background-color: white;
+  border-radius: 2vw;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 3vw;
+  text-align: center;
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  border-radius: 2vw;
+}
+
+.product-details {
+  margin-top: 2vw;
+}
+
+.product-title {
+  font-size: 4vw;
+  font-weight: bold;
+}
+
+.product-price {
+  font-size: 4vw;
+  color: #333;
 }
 </style>
