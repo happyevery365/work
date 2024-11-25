@@ -28,6 +28,7 @@ from .views import send_sms_code
 from .views import starGood
 from .views import notStarGood
 from .views import fetchPriceData
+from .views import price_compare
 
 urlpatterns = [
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
@@ -42,5 +43,6 @@ urlpatterns = [
     path('api/get_category/', get_category, name='get_category'),
     path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
     path('api/fetchPriceData/', fetchPriceData, name='fetchPriceData'),
+    path('api/price_compare/', price_compare, name='price_compare'),
 ]
 

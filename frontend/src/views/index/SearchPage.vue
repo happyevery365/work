@@ -28,19 +28,9 @@ export default {
     };
   },
   created() {
-    const savedState = sessionStorage.getItem('GoodsPageState');
-    if (savedState) {
-      // 如果有保存的状态，从 sessionStorage 恢复
-      const { goods, searchQuery, username } = JSON.parse(savedState);
-      this.goods = goods;
-      this.searchQuery = searchQuery;
-      this.username = username;
-    } else {
-      // 初始化页面
-      this.searchQuery = this.$route.query.searchQuery;
-      this.username = this.$route.query.username;
-      this.SearchProducts();
-    }
+    this.searchQuery = this.$route.query.searchQuery;
+    this.username = this.$route.query.username;
+    this.SearchProducts();
   },
   methods: {
     async SearchProducts() {
@@ -50,9 +40,6 @@ export default {
           username: this.username
         });
         this.goods = response.data.goods;
-
-        // 保存状态到 sessionStorage
-        this.savePageState();
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }
@@ -69,14 +56,6 @@ export default {
     // 在新窗口中打开目标页面
     window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口
     },
-    savePageState() {
-      const state = {
-        goods: this.goods,
-        searchQuery: this.searchQuery,
-        username: this.username
-      };
-      sessionStorage.setItem('GoodsPageState', JSON.stringify(state));
-    }
   }
 };
 </script>

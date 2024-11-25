@@ -1,6 +1,8 @@
 import base64
 import io
 import random
+
+import jieba
 import matplotlib.pyplot as plt
 
 import pymysql
@@ -270,6 +272,10 @@ def search(request):
     username = request.data.get('username')
     searchQuery = request.data.get('searchQuery')
     goods = []
+    words = jieba.lcut(searchQuery)  # 返回一个列表
+    print("分词结果:", words)
+    # 如果需要用空格连接分词结果
+    searchQuery = " ".join(words)
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT app FROM UserApps WHERE username = %s", [username])
@@ -536,8 +542,280 @@ def search(request):
     except Exception as e:
         # 捕获并返回错误信息
         return Response({'error': 'Database error', 'details': str(e)}, status=500)
+# 找到价格最小的商品
+def find_cheapest_good(goods_list, source):
+    """将价格最小的商品与来源封装"""
+    cheapest = None
+    for item in goods_list:
+        try:
+            price = float(item['price'])  # 转换为浮点数
+            if cheapest is None or price < cheapest['price']:
+                cheapest = {
+                    'good': item,
+                    'price': price,
+                    'source': source
+                }
+        except ValueError:
+            print(f"商品价格无法转换为数字: {item['price']}")
+    return cheapest
+@api_view(['POST'])
+def price_compare(request):
+    searchQuery = request.data.get('searchQuery')
+    goods_taobao = []
+    goods_jingdong = []
+    goods_weipinhui = []
+    try:
+        options = Options()
+        options.add_experimental_option("excludeSwitches", ['enable-automation'])
+        driver = webdriver.Chrome(options=options)
+        driver.maximize_window()
+        wait = WebDriverWait(driver, 5)
+        """抓取商品信息"""
+        encoded_keyword = urllib.parse.quote(searchQuery)
+        base_url = f"https://uland.taobao.com/sem/tbsearch?clk1=b27114e13eaf50a5b4b3472c3265ec77&keyword={encoded_keyword}&localImgKey=&q={encoded_keyword}&refpid=mm_2898300158_3078300397_115665800437&tab=all&upsId=b27114e13eaf50a5b4b3472c3265ec77"
+        page = 1
+        total_count = 0  # 用于统计已抓取的商品数
 
+        while total_count < 10:
+            url = f"{base_url}&page={page}"
+            print(f"正在抓取第 {page} 页: {url}")
+            driver.get(url)
+            count = 1  # 每页商品从 data-spm=1 开始
 
+            while total_count < 10:  # 每页抓取商品
+                html = driver.page_source
+                doc = pq(html)
+                item = doc(f'a[data-spm="{count}"]')
+
+                if not item:
+                    print(f"未找到商品 {count}，滚动页面加载...")
+                    driver.execute_script("window.scrollBy(0, 600);")
+                    time.sleep(0.5)
+                    html = driver.page_source
+                    doc = pq(html)
+                    item = doc(f'a[data-spm="{count}"]')
+                    if not item:
+                        print("到达页面底部")
+                        break  # 跳出当前页面的循环，尝试下一页
+
+                try:
+                    # 提取商品信息
+                    title = item.find('.Title--title--jCOPvpf').text()
+                    product_url = item.attr('href')
+                    img_url = item.find('img').attr('src') or ''
+                    price_int = item.find('.Price--priceInt--ZlsSi_M').text() or "0"
+                    price_float = item.find('.Price--priceFloat--h2RR0RK').text() or "00"
+                    price = f"{price_int}.{price_float}".replace("..", ".")
+                    location = item.find('.Price--procity--_7Vt3mX').text()
+                    shop = item.find('.ShopInfo--shopName--rg6mGmy').text()
+                    post_text = item.find('.SalesPoint--subIconWrapper--s6vanNY').attr('title') or ""
+                    isPostFree = 1 if "包邮" in post_text else 0
+
+                    product = {
+                        'title': title,
+                        'price': price,
+                        'location': location,
+                        'shop': shop,
+                        'isPostFree': isPostFree,
+                        'product_url': product_url,
+                        'img_url': img_url
+                    }
+                    if "?" not in price:
+                        goods_taobao.append(product)
+                        print(f"商品 {total_count + 1} 数据已保存: {product}")
+                        total_count += 1
+
+                except Exception as e:
+                    print(f"商品 {count} 抓取失败: {e}")
+
+                count += 1  # 尝试抓取下一个商品
+
+            if count <= 1:  # 如果第一页没有商品，则说明没有更多页面
+                print("未能获取任何商品，停止抓取。")
+                break
+
+            page += 1  # 切换到下一页
+            if page > 30:
+                break
+
+        print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+
+        """抓取商品信息"""
+        base_url = f"https://re.jd.com/search?keyword={searchQuery}&enc=utf-8"
+        page = 1
+        total_count = 0  # 用于统计已抓取的商品数
+
+        while total_count < 10:  # 限制总共抓取 1000 个商品
+            url = f"{base_url}&page={page}"
+            print(url)
+            print(f"正在抓取第 {page} 页: {url}")
+            driver.get(url)
+
+            time.sleep(3)  # 等待页面加载
+            html = driver.page_source
+            doc = pq(html)
+
+            # 提取每个商品信息
+            items = doc('.li_cen').items()
+            for item in items:
+                try:
+                    # 提取商品信息
+                    title = item.find('.commodity_tit').text()
+                    product_url = item.find('.pic a').attr('href')
+                    if product_url and not product_url.startswith("http"):
+                        product_url = "https:" + product_url
+
+                    img_url = item.find('.pic img.img_k').attr('src') or ''
+                    if img_url and not img_url.startswith("http"):
+                        img_url = "https:" + img_url
+
+                    price = item.find('.price').text().replace('￥', '').strip() or "0"
+                    isPostFree = 1  # 假设所有商品包邮（可以根据实际逻辑修改）
+                    shop = "京东商城"  # 假设来源固定为京东
+                    location = "未知"  # 网页中未提供位置字段
+
+                    product = {
+                        'title': title,
+                        'price': price,
+                        'location': location,
+                        'shop': shop,
+                        'isPostFree': isPostFree,
+                        'product_url': product_url,
+                        'img_url': img_url
+                    }
+                    goods_jingdong.append(product)
+                    print(f"商品 {total_count + 1} 数据已保存: {product}")
+                    total_count += 1
+
+                    if total_count >= 10:
+                        break  # 达到抓取限制，停止
+
+                except Exception as e:
+                    print(f"商品抓取失败: {e}")
+
+            page += 1  # 切换到下一页
+            if page > 30:
+                break
+
+        print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+        print("开始抓取商品信息...")
+        weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
+        cookie_file_weipinhui = 'cookie_weipinhui.txt'
+        if not os.path.exists(cookie_file_weipinhui):
+            driver.get(weipinhui_url)
+            # 等待手动登录完成
+            time.sleep(60)
+            # 获取当前的 cookies 并保存到文件
+            cookies = driver.get_cookies()
+            with open(cookie_file_weipinhui, 'w') as f:
+                json.dump(cookies, f)
+            print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
+        else:
+            print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
+            driver.get(weipinhui_url)
+            with open(cookie_file_weipinhui, 'r') as f:
+                cookies = json.load(f)
+            for cookie in cookies:
+                driver.add_cookie(cookie)
+
+        base_url = f"https://category.vip.com/suggest.php?keyword={searchQuery}"
+        page = 1
+        total_count = 0  # 统计已抓取的商品数
+
+        while total_count < 10:  # 限制总共抓取 10 个商品
+            url = f"{base_url}&page={page}"
+            print(f"正在抓取第 {page} 页: {url}")
+            driver.get(url)
+            time.sleep(3)  # 等待页面加载
+
+            # 解析页面 HTML
+            html = driver.page_source
+            doc = pq(html)
+
+            # 提取商品信息
+            items = doc('.c-goods-item').items()
+            for item in items:
+                try:
+                    # 提取标题
+                    title = (
+                            item.find('.c-goods-item_name').text() or
+                            item.find('.J-goods-item__img').attr('alt') or
+                            '未知商品'
+                    ).strip()
+
+                    # 提取价格
+                    price = (
+                            item.find('.c-goods-item__sale-price').text() or "0"
+                    ).replace('¥', '').strip()
+
+                    # 提取商品链接
+                    product_url = item.find('a').attr('href')
+                    if product_url and not product_url.startswith("http"):
+                        product_url = "https:" + product_url
+
+                    # 提取图片链接
+                    img_url = item.find('.J-goods-item__img').attr('data-original') or item.find(
+                        '.J-goods-item_img').attr('src')
+                    if img_url and not img_url.startswith("http"):
+                        img_url = "https:" + img_url
+
+                    # 设置包邮信息为 0（未提供包邮信息）
+                    isPostFree = 0
+
+                    # 设置店铺和位置默认值
+                    shop = "唯品会"
+                    location = "未知"
+
+                    # 组合商品信息
+                    product = {
+                        'title': title,
+                        'price': price,
+                        'location': location,
+                        'shop': shop,
+                        'isPostFree': isPostFree,
+                        'product_url': product_url,
+                        'img_url': img_url
+                    }
+                    goods_weipinhui.append(product)
+                    print(f"商品 {total_count + 1} 数据已保存: {product}")
+                    total_count += 1
+
+                    if total_count >= 10:
+                        break  # 达到抓取限制，停止
+
+                except Exception as e:
+                    print(f"商品抓取失败: {e}")
+
+            page += 1  # 切换到下一页
+            if page > 30:
+                break
+
+        print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+        driver.quit()
+        cheapest_goods = [
+            find_cheapest_good(goods_taobao, '淘宝'),
+            find_cheapest_good(goods_jingdong, '京东'),
+            find_cheapest_good(goods_weipinhui, '唯品会')
+        ]
+
+        # 去掉空值并找到最便宜的商品
+        cheapest_goods = [good for good in cheapest_goods if good is not None]
+        if cheapest_goods:
+            cheapest_good = min(cheapest_goods, key=lambda x: x['price'])
+        else:
+            cheapest_good = None
+        cheapest_good_2 = []
+        cheapest_good_2.append(cheapest_good['good'])
+        return Response({
+            "goods_taobao": goods_taobao,
+            "goods_jingdong": goods_jingdong,
+            "goods_weipinhui": goods_weipinhui,
+            "cheapest_good": cheapest_good_2,
+            "cheapest_good_source": cheapest_good['source']
+        })
+    except Exception as e:
+        # 捕获并返回错误信息
+        return Response({'error': 'Database error', 'details': str(e)}, status=500)
 
 @api_view(['POST'])
 def get_category(request):

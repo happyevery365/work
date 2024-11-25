@@ -6,6 +6,7 @@ import Product_Categories from '../views/index/Product_Categories';
 import CategoryPage from '../views/index/CategoryPage';
 import SearchPage from '../views/index/SearchPage';
 import DetailPage from '../views/index/DetailPage';
+import PriceCompare from '../views/index/PriceCompare';
 
 const routes = [
   {
@@ -47,6 +48,12 @@ const routes = [
     path: '/DetailPage',
     name: 'DetailPage',
     component: DetailPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/PriceCompare',
+    name: 'PriceCompare',
+    component: PriceCompare,
     meta: { requiresAuth: true },
   }
 ];
