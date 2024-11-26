@@ -1,9 +1,9 @@
 <template>
   <div class="detail-page">
-    <p>   </p>
+    <p></p>
     <div class="product-info">
       <div class="product-image">
-        <img :src="product.img_url" alt="商品图片" />
+        <img :src="product.img_url" alt="商品图片"/>
       </div>
       <div class="product-details">
         <div class="product-link-container">
@@ -25,7 +25,7 @@
 
     <!-- 图表显示区域 -->
     <div v-if="chartImageData">
-      <img :src="'data:image/png;base64,' + chartImageData" alt="价格走势图" />
+      <img :src="'data:image/png;base64,' + chartImageData" alt="价格走势图"/>
     </div>
   </div>
 </template>
@@ -39,7 +39,8 @@ export default {
       product: {},  // 商品信息
       isStarred: false,  // 是否已标记为星标
       username: '',
-      chartImageData: null  // 存储图表的 Base64 数据
+      chartImageData: null,  // 存储图表的 Base64 数据
+      errormessage: '',
     };
   },
   created() {
@@ -49,24 +50,19 @@ export default {
     if (product) {
       this.product = product;
     }
+    this.errormessage = '';
+    // 搜索该商品是否已经被标记
+    this.searchIfStarred();
     // 获取价格历史图表
-    this.fetchPriceChart();
+    // this.fetchPriceChart();
   },
   methods: {
     toggleStar() {
       if (this.isStarred) {
-        this.unstarProduct();
+        this.unstarGood();
       } else {
-        this.starProduct();
+        this.starGood();
       }
-    },
-    // 调用后端函数标记为星标
-    starProduct() {
-      this.isStarred = true;
-    },
-    // 调用后端函数取消星标
-    unstarProduct() {
-      this.isStarred = false;
     },
     // 获取价格历史图表
     async fetchPriceChart() {
@@ -80,7 +76,33 @@ export default {
       } catch (error) {
         console.error("请求失败:", error);
       }
-    }
+    },
+    async searchIfStarred() {
+      try {
+        const response = await axios.post('http://192.168.117.146:8000/api/searchIfStarred/', {product_url: this.product.product_url, username: this.username});
+        this.isStarred = response.data.isStarred;
+      } catch (error) {
+        console.error("请求失败:", error);
+      }
+    },
+    async starGood() {
+      try {
+        const response = await axios.post('http://192.168.117.146:8000/api/star_goods/', {product: this.product, username: this.username});
+        this.errormessage = response.data.message;
+        this.isStarred = true;
+      } catch (error) {
+        console.error("请求失败:", error);
+      }
+    },
+    async unstarGood() {
+      try {
+        const response = await axios.post('http://192.168.117.146:8000/api/unstar_goods/', {product: this.product, username: this.username});
+        this.errormessage = response.data.message;
+        this.isStarred = false;
+      } catch (error) {
+        console.error("请求失败:", error);
+      }
+    },
   }
 };
 </script>

@@ -188,6 +188,42 @@ def get_goods(request):
         "goods": all_products
     })
 
+@api_view(['POST'])
+def get_preferrence_goods(request):
+    username = request.data.get('username')
+    all_products = []
+    try:
+        # 插入数据
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select * from star_goods where username = %s
+                """,
+                [username]
+            )
+            products = cursor.fetchall()
+        # 格式化商品数据
+        for product in products:
+            product_info = {
+                "id": product[0],
+                "title": product[3],
+                "price": product[1],
+                "deal": product[2],
+                "shop": product[4],
+                "location": product[5],
+                "postFree": product[6],
+                "product_url": product[7],
+                "img_url": product[8]
+            }
+            all_products.append(product_info)
+        # 返回所有商品数据
+        return Response({
+            "total_products": len(all_products),
+            "goods": all_products
+        })
+    except Exception as e:
+        return JsonResponse({'message': '数据库错误', 'error': str(e)}, status=500)
+
 # 获取用户是否已有喜好
 @api_view(['POST'])
 def check_user_preferences(request):
@@ -216,7 +252,7 @@ def save_user_preferences(request):
             preferences = data.get('preferences')
 
             if not username or not preferences:
-                return JsonResponse({'success': False, 'message': '用户名和喜好不能为空'})
+                return JsonResponse({'success': False, 'message': '喜好不能为空'})
 
             # 验证类别是否在允许的类别内
             allowed_categories = [
@@ -247,6 +283,43 @@ def save_user_preferences(request):
     else:
         return JsonResponse({'success': False, 'message': '请求方法错误'})
 
+@api_view(['POST'])
+def change_preferences(request):
+    try:
+        data = json.loads(request.body)
+        username = data.get('username')
+        preferences = data.get('preferences')
+
+        if not username or not preferences:
+            return JsonResponse({'success': False, 'message': '喜好不能为空'})
+
+        # 验证类别是否在允许的类别内
+        allowed_categories = [
+            '电脑', '配件', '办公', '文具', '工业', '商业', '农业', '家电', '手机', '通信',
+            '数码', '家具', '家装', '家居', '厨具', '女装', '男装', '内衣', '配饰', '女鞋', '男鞋',
+            '运动', '户外', '汽车', '珠宝', '文玩', '箱包', '食品', '生鲜', '酒类', '健康', '母婴',
+            '童装', '玩具', '宠物', '美妆', '个户', '家清', '香氛', '娱乐', '图书', '乐器', '鲜花'
+        ]
+
+        invalid_preferences = [pref for pref in preferences if pref not in allowed_categories]
+        if invalid_preferences:
+            return JsonResponse({'success': False, 'message': f'无效的喜好类别: {", ".join(invalid_preferences)}'})
+        # 清除原有喜好，保存新的喜好
+        with connection.cursor() as cursor:
+            # 首先删除该用户之前的所有喜好记录
+            cursor.execute("DELETE FROM user_preferences WHERE username = %s", [username])
+
+            # 插入新的喜好记录
+            for pref in preferences:
+                cursor.execute("""
+                    INSERT INTO user_preferences (username, category)
+                    VALUES (%s, %s)
+                """, [username, pref])
+
+        return JsonResponse({'success': True, 'message': '喜好保存成功'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'保存失败: {str(e)}'})
+
 @api_view(['GET'])
 def fetchAppImages(request):
     try:
@@ -262,6 +335,106 @@ def fetchAppImages(request):
         return JsonResponse({'success': True, 'appImages': app_images})
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'获取应用图片失败: {str(e)}'})
+
+@api_view(['POST'])
+def searchIfStarred(request):
+    username = request.data.get('username')
+    product_url = request.data.get('product_url')
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM star_goods WHERE username = %s AND product_url = %s",
+                (username, product_url)
+            )
+            result = cursor.fetchone()
+        if result is None:
+            return JsonResponse({'isStarred': False})
+        return JsonResponse({'isStarred': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
+
+@api_view(['POST'])
+def change_password(request):
+    username = request.data.get('username')
+    oldpassword = request.data.get('oldpassword')
+    newpassword = request.data.get('newpassword')
+
+    if not username or not oldpassword or not newpassword:
+        return JsonResponse({'success': False, 'message': '缺少必要字段'}, status=400)
+
+    try:
+        # 验证原密码
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM users WHERE username = %s AND password = %s",
+                (username, oldpassword)
+            )
+            result = cursor.fetchone()
+        if result is None:
+            return JsonResponse({'success': False, 'message': '原密码错误'}, status=400)
+
+        # 更新密码
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users SET password = %s WHERE username = %s",
+                (newpassword, username)
+            )
+        return JsonResponse({'success': True, 'message': '修改密码成功'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
+
+@api_view(['POST'])
+def star_goods(request):
+    username = request.data.get('username')
+    product = request.data.get('product')
+    price = product.get('price')
+    deal = product.get('deal')
+    title = product.get('title')
+    shop = product.get('shop')
+    location = product.get('location')
+    postFree = product.get('postFree')
+    product_url = product.get('product_url')
+    img_url = product.get('img_url')
+    try:
+        # 验证原密码
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO star_goods (username, price, deal, title, shop, location, postFree, product_url, img_url, update_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                """,
+                [username, price, deal, title, shop, location, postFree, product_url, img_url]
+            )
+        return JsonResponse({'message': ''})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
+
+@api_view(['POST'])
+def unstar_goods(request):
+    username = request.data.get('username')
+    product = request.data.get('product')
+    price = product.get('price')
+    deal = product.get('deal')
+    title = product.get('title')
+    shop = product.get('shop')
+    location = product.get('location')
+    postFree = product.get('postFree')
+    product_url = product.get('product_url')
+    img_url = product.get('img_url')
+    try:
+        # 验证原密码
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM star_goods
+                WHERE username = %s AND product_url = %s
+                """,
+                [username, product_url]
+            )
+        return JsonResponse({'message': ''})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
 
 import random
 import urllib

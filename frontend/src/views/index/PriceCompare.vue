@@ -35,7 +35,9 @@
     </div>
   </div>
 
-  <p>{{ cheapest_good_source }}</p>
+  <div class="user-info">
+    <span class="username">{{ cheapest_good_source }}</span>
+  </div>
   <div v-if="cheapest_good.length" class="products-grid">
     <div class="product-item" v-for="(item, index) in cheapest_good" :key="index" @click="goToDetailPage(item)">
       <img :src="item.img_url" alt="商品图片" class="product-image" />
@@ -45,9 +47,14 @@
       </div>
     </div>
   </div>
-  <p v-else>暂无商品信息</p>
+  <div v-else class="user-info">
+    <span class="username">比价未开始</span>
+  </div>
+
   <!-- 商品展示区域 -->
-  <p>淘宝</p>
+  <div class="user-info">
+    <span class="username">淘宝</span>
+  </div>
   <div v-if="goods_taobao.length" class="products-grid">
     <div class="product-item" v-for="(item, index) in goods_taobao" :key="index" @click="goToDetailPage(item)">
       <img :src="item.img_url" alt="商品图片" class="product-image" />
@@ -57,8 +64,13 @@
       </div>
     </div>
   </div>
-  <p v-else>暂无商品信息</p>
-  <p>京东</p>
+  <div v-else class="user-info">
+    <span class="username">暂无商品信息</span>
+  </div>
+
+  <div class="user-info">
+    <span class="username">京东</span>
+  </div>
   <div v-if="goods_jingdong.length" class="products-grid">
     <div class="product-item" v-for="(item, index) in goods_jingdong" :key="index" @click="goToDetailPage(item)">
       <img :src="item.img_url" alt="商品图片" class="product-image" />
@@ -68,8 +80,13 @@
       </div>
     </div>
   </div>
-  <p v-else>暂无商品信息</p>
-  <p>唯品会</p>
+  <div v-else class="user-info">
+    <span class="username">暂无商品信息</span>
+  </div>
+
+  <div class="user-info">
+    <span class="username">唯品会</span>
+  </div>
   <div v-if="goods_weipinhui.length" class="products-grid">
     <div class="product-item" v-for="(item, index) in goods_weipinhui" :key="index" @click="goToDetailPage(item)">
       <img :src="item.img_url" alt="商品图片" class="product-image" />
@@ -79,7 +96,9 @@
       </div>
     </div>
   </div>
-  <p v-else>暂无商品信息</p>
+  <div v-else class="user-info">
+    <span class="username">暂无商品信息</span>
+  </div>
 
   <!-- 固定底部导航栏 -->
   <div class="bottom-nav">
@@ -349,5 +368,16 @@ html, body {
 h2 {
   font-size: 4.5vw;
   margin-top: 4vh;
+}
+
+.user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2vh;
+}
+
+.username {
+  font-size: 4vw;
 }
 </style>

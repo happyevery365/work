@@ -7,6 +7,10 @@ import CategoryPage from '../views/index/CategoryPage';
 import SearchPage from '../views/index/SearchPage';
 import DetailPage from '../views/index/DetailPage';
 import PriceCompare from '../views/index/PriceCompare';
+import MyRoom from '../views/index/MyRoom';
+import ChangePassword from '../views/index/ChangePassword';
+import ChangePreferences from '../views/index/ChangePreferences';
+import MyFavorites from '../views/index/MyFavorites';
 
 const routes = [
   {
@@ -54,6 +58,30 @@ const routes = [
     path: '/PriceCompare',
     name: 'PriceCompare',
     component: PriceCompare,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/MyRoom',
+    name: 'MyRoom',
+    component: MyRoom,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/ChangePassword',
+    name: 'ChangePassword',
+    component: ChangePassword,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/ChangePreferences',
+    name: 'ChangePreferences',
+    component: ChangePreferences,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/MyFavorites',
+    name: 'MyFavorites',
+    component: MyFavorites,
     meta: { requiresAuth: true },
   }
 ];

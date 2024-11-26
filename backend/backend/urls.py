@@ -29,13 +29,21 @@ from .views import starGood
 from .views import notStarGood
 from .views import fetchPriceData
 from .views import price_compare
+from .views import change_password
+from .views import change_preferences
+from .views import searchIfStarred
+from .views import star_goods
+from .views import unstar_goods
+from .views import get_preferrence_goods
 
 urlpatterns = [
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
     path('api/register/', register_user, name='register_user'),
     path('api/get-goods/', get_goods, name='get_goods'),
+    path('api/get-preferrencegoods/', get_preferrence_goods, name='get_preferrence_goods'),
     path('api/check-preferences/', check_user_preferences, name='check_user_preferences'),
     path('api/save-preferences/', save_user_preferences, name='save_user_preferences'),
+    path('api/change-preferences/', change_preferences, name='change_preferences'),
     path('api/get-app-images/', fetchAppImages, name='fetch_app_images'),
     path('api/starGood/', starGood, name='starGood'),
     path('api/notStarGood/', notStarGood, name='notStarGood'),
@@ -44,5 +52,9 @@ urlpatterns = [
     path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
     path('api/fetchPriceData/', fetchPriceData, name='fetchPriceData'),
     path('api/price_compare/', price_compare, name='price_compare'),
+    path('api/change_password/', change_password, name='change_password'),
+    path('api/searchIfStarred/', searchIfStarred, name='searchIfStarred'),
+    path('api/star_goods/', star_goods, name='star_goods'),
+    path('api/unstar_goods/', unstar_goods, name='unstar_goods'),
 ]
 
