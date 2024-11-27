@@ -54,7 +54,7 @@ export default {
     // 搜索该商品是否已经被标记
     this.searchIfStarred();
     // 获取价格历史图表
-    // this.fetchPriceChart();
+    this.fetchPriceChart();
   },
   methods: {
     toggleStar() {

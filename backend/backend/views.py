@@ -1045,85 +1045,230 @@ import json
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-
+from selenium.webdriver import ActionChains
+import re  # 用于提取价格中的数字
+from urllib.parse import urljoin, urlparse, urlencode, parse_qs
 
 
 # 获取历史价格数据并返回图表
 @api_view(['POST'])
 def fetchPriceData(request):
-    app = Flask(__name__)
+    shop = request.data.get('product_url')  # 使用 request.data 获取 POST 数据
+    print(shop)
+    # 修复相对路径并确保正确编码
+    parsed_url = urlparse(shop)
+    if not parsed_url.scheme:
+        shop = urljoin("https:", shop)
+        parsed_url = urlparse(shop)
+    # 确保查询参数正确编码
+    query_params = parse_qs(parsed_url.query)
+    encoded_query = urlencode(query_params, doseq=True)
+    shop = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{encoded_query}"
+
+    # 打印修复后的 URL
+    print("修复后的 URL:", shop)
+    # 检查 cookie 文件是否存在
+    cookie_file = 'cookie_manmanbuy.txt'
 
     # 设置 Chrome 启动选项
     chrome_options = Options()
-    # chrome_options.add_argument("--headless")  # 如果你不想打开浏览器界面，可以启用这一行
-    cookie_file = 'cookie_manmanbuy.txt'
-    product_url = request.data.get('product_url')  # 使用 request.data 获取 POST 数据
-
+    # chrome_options.add_argument("--headless")  # 如果你想不打开浏览器界面，可以启用这一行
+    # 禁用检测 WebDriver 的标志
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    # 伪装 User-Agent
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
     # 创建 WebDriver 实例
     driver = webdriver.Chrome(options=chrome_options)
+    # 创建 WebDriver 实例
+    Action = ActionChains(driver)
+    # 在页面加载之前，设置 navigator.webdriver 为 undefined
+    driver.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {
+            "source": """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            """
+        }
+    )
 
-    # 如果 cookie 文件不存在，则执行登录操作
-    if not os.path.exists(cookie_file):
-        driver.get('https://home.manmanbuy.com/login.aspx')
+    taobao_url = 'https://login.taobao.com/'
+    cookie_file_taobao = 'cookie_taobao.txt'
+    if not os.path.exists(cookie_file_taobao):
+        driver.get(taobao_url)
+        # 等待手动登录完成
         time.sleep(60)
+        # 获取当前的 cookies 并保存到文件
         cookies = driver.get_cookies()
-        with open(cookie_file, 'w') as f:
+        with open(cookie_file_taobao, 'w') as f:
             json.dump(cookies, f)
-        print("Cookies 已保存到文件：cookie_manmanbuy.txt")
+        print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
     else:
-        print("cookie_manmanbuy.txt 已存在，跳过登录步骤。")
-        driver.get('https://home.manmanbuy.com/login.aspx')
-        time.sleep(2)
-        with open(cookie_file, 'r') as f:
+        print("cookie_file_taobao.txt 已存在，跳过登录步骤。")
+        driver.get(taobao_url)
+        with open(cookie_file_taobao, 'r') as f:
             cookies = json.load(f)
         for cookie in cookies:
             driver.add_cookie(cookie)
 
-    # 打开商品历史价格页面
-    driver.get(f'http://tool.manmanbuy.com/HistoryLowest.aspx?url={product_url}')
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    while True:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    # jingdong_url = 'https://passport.jd.com/new/login.aspx'
+    # cookie_file_jingdong = 'cookie_jingdong.txt'
+    # if not os.path.exists(cookie_file_jingdong):
+    #     driver.get(jingdong_url)
+    #     # 等待手动登录完成
+    #     time.sleep(60)
+    #     # 获取当前的 cookies 并保存到文件
+    #     cookies = driver.get_cookies()
+    #     with open(cookie_file_jingdong, 'w') as f:
+    #         json.dump(cookies, f)
+    #     print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
+    # else:
+    #     print("cookie_file_jingdong.txt 已存在，跳过登录步骤。")
+    #     driver.get('https://www.jd.com/')
+    #     with open(cookie_file_jingdong, 'r') as f:
+    #         cookies = json.load(f)
+    #     for cookie in cookies:
+    #         driver.add_cookie(cookie)
+
+    cookie_file_weipinhui = 'cookie_weipinhui.txt'
+    weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
+    if not os.path.exists(cookie_file_weipinhui):
+        driver.get(weipinhui_url)
+        # 等待手动登录完成
+        time.sleep(60)
+        # 获取当前的 cookies 并保存到文件
+        cookies = driver.get_cookies()
+        with open(cookie_file_weipinhui, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
+    else:
+        print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
+        driver.get(weipinhui_url)
+        with open(cookie_file_weipinhui, 'r') as f:
+            cookies = json.load(f)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
+    # 访问指定 URL
+    driver.get(shop)
+    # 获取页面的实际地址
+    shop = driver.current_url
+    print(shop)
+    # 如果 cookie 文件不存在，则执行登录操作
+    if not os.path.exists(cookie_file):
+        # 启动浏览器并打开登录页面
+        driver.get('https://home.manmanbuy.com/login.aspx')
+
+        # 等待页面加载
+        time.sleep(60)
+
+        # 获取当前的 cookies 并保存到文件
+        cookies = driver.get_cookies()
+        with open(cookie_file, 'w') as f:
+            json.dump(cookies, f)
+
+        print("Cookies 已保存到文件：cookie_manmanbuy.txt")
+    else:
+        print("cookie_manmanbuy.txt 已存在，跳过登录步骤。")
+        # 启动浏览器并打开登录页面
+        driver.get('https://home.manmanbuy.com/login.aspx')
+
+        # 等待页面加载
         time.sleep(2)
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
-    time.sleep(10)
-    # 获取页面内容并解析
-    html = driver.page_source
-    soup = BeautifulSoup(html, 'html.parser')
+        # 读取保存的 cookies
+        with open(cookie_file, 'r') as f:
+            cookies = json.load(f)
+        # 添加 cookies
+        for cookie in cookies:
+            driver.add_cookie(cookie)
 
-    # 提取历史价格数据
-    divs = soup.find_all('div', {'style': 'border-left:2px dashed #b1afaf;padding-top:25px;margin-left:15px;'})
-    price_history = []
-    for div in divs:
-        date_div = div.find('div', style=lambda value: value and 'font-size:larger' in value)
-        if date_div:
-            date = date_div.get_text(strip=True)
-            price_div = div.find('div', style=lambda value: value and 'color:#ff4400' in value)
-            if price_div:
-                price = price_div.get_text(strip=True).replace("¥", "")
-                price_history.append({"date": date, "price": price})
+    # 启动浏览器并打开历史最低价格页面
+    driver.get(
+        f'http://tool.manmanbuy.com/HistoryLowest.aspx')
+    # 等待页面加载
+    time.sleep(2)
 
+    # 定位搜索框并清空内容
+    search_box = driver.find_element(By.ID, "historykey")
+    search_box.clear()
+
+    # 将 shop 字符串插入搜索框
+    search_box.send_keys(shop)
+    time.sleep(2)  # 等待查询结果加载
+
+    # 定位查询按钮并点击
+    search_button = driver.find_element(By.ID, "searchHistory")
+    search_button.click()
+    time.sleep(2)  # 等待查询结果加载
+
+    # 滑动到底部以确保所有数据加载完成
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    time.sleep(5)
+
+    # 确定趋势图画布的容器位置
+    canvas = driver.find_element(By.ID, "container")  # 根据容器 ID 定位
+    canvas_location = canvas.location
+    canvas_size = canvas.size
+
+    # 爬取历史价格数据
+    data = []
+
+    # 设置画布范围并爬取数据
+    for offset_x in range(-canvas_size['width'] // 2, canvas_size['width'] // 2, 36):
+        Action.move_to_element(canvas).perform()
+        Action.move_by_offset(offset_x, 0).perform()
+        time.sleep(1)
+        try:
+            # 从趋势图中提取文本
+            text_element = driver.find_element(By.XPATH,
+                                               "//*[contains(@class, 'trend-box')]//div[contains(@style, 'position: absolute')]")
+            text = text_element.text
+            if text:  # 如果文本不为空
+                first_space_index = text.find(' ')  # 找到第一个空格的位置
+                if first_space_index != -1:
+                    date = text[:first_space_index].strip()  # 提取日期部分
+                    price_str = text[first_space_index + 1:].strip()  # 提取价格部分
+
+                    # 提取价格中的数字部分
+                    price_match = re.search(r'\d+(\.\d+)?', price_str)
+                    if price_match:
+                        price = float(price_match.group())  # 转为浮点数
+                        data.append((date, price))  # 将日期和价格存储为元组
+            with open('price.txt', 'a', encoding='utf-8') as f:
+                f.write(text + '\n')
+        except Exception as err:
+            print(f"数据提取失败: {err}")
+
+    # 关闭浏览器
     driver.quit()
+    print("提取到的数据：")
+    for entry in data:
+        print(f"日期: {entry[0]}, 价格: {entry[1]}")
 
     # 如果没有找到历史价格数据
-    if not price_history:
+    if not data:
         return JsonResponse({'success': False, 'message': '没有找到历史价格数据'})
 
-    # 提取价格和日期数据，用于绘图
-    dates = [entry['date'] for entry in price_history]
-    prices = [float(entry['price']) for entry in price_history]
+        # 按日期排序
 
-    # 创建图表
-    plt.figure(figsize=(10, 5))
-    plt.plot(dates, prices, marker='o', color='b', linestyle='-', label='价格')
-    plt.title('商品价格历史走势')
-    plt.xlabel('日期')
-    plt.ylabel('价格 (元)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
+        # 提取日期和价格
+        dates = [entry[0] for entry in data]
+        prices = [entry[1] for entry in data]
+
+        # 创建图表
+        plt.figure(figsize=(10, 5))
+        plt.plot(dates, prices, marker='o', linestyle='-', color='b')
+        plt.title('历史价格趋势图', fontsize=16)
+        plt.xlabel('日期', fontsize=12)
+        plt.ylabel('价格 (¥)', fontsize=12)
+        plt.xticks(rotation=45)  # 日期标签倾斜显示
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+
+        # 显示图表
+        plt.show()
     # 保存图片到本地
     plt.savefig('price_history.png', dpi=300, bbox_inches='tight')  # 设定保存路径和文件格式
 
