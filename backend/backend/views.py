@@ -1,10 +1,6 @@
-import base64
-import io
 import random
-
 import jieba
 import matplotlib.pyplot as plt
-
 import pymysql
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,16 +9,118 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from pyquery import PyQuery as pq
-from selenium.webdriver.chrome.options import Options
 import os
+from selenium.common.exceptions import NoSuchElementException
+from django.core.mail import send_mail
+import urllib
+from pyquery import PyQuery as pq
+from flask import Flask, request, jsonify
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import ActionChains
+import re  # 用于提取价格中的数字
+from urllib.parse import urljoin, urlparse, urlencode, parse_qs
+from datetime import datetime
+
+
+@api_view(['POST'])
+def newChangedGoods(request):
+    # 从前端获取 username 参数
+    username = request.data.get('username')
+    if not username:
+        return JsonResponse({'error': 'Username is required'}, status=400)
+    all_products = []
+    with connection.cursor() as cursor:
+        cursor.execute("""SELECT * FROM star_goods where username = %s and ifSeen = 0""", [username])
+        products = cursor.fetchall()
+        # 格式化商品数据
+        for product in products:
+            if isinstance(product[9], datetime):  # 检查是否是 datetime 对象
+                update_date = product[9].strftime('%Y-%m-%d %H:%M:%S')  # 将 DATETIME 转换为字符串
+            else:
+                update_date = None  # 如果不是 datetime 对象，返回 None
+            product_info = {
+                "id": product[0],
+                "title": product[3],
+                "price": product[1],
+                "deal": product[2],
+                "shop": product[4],
+                "location": product[5],
+                "postFree": product[6],
+                "product_url": product[7],
+                "img_url": product[8],
+                "update_date":update_date
+            }
+            all_products.append(product_info)
+    with connection.cursor() as cursor:
+        cursor.execute("""UPDATE star_goods set ifSeen = 1 where username = %s""", [username])
+    # 返回所有商品数据
+    return Response({
+        "total_products": len(all_products),
+        "goods": all_products
+    })
+
+@api_view(['POST'])
+def oldChangedGoods(request):
+    # 从前端获取 username 参数
+    username = request.data.get('username')
+    if not username:
+        return JsonResponse({'error': 'Username is required'}, status=400)
+    all_products = []
+    with connection.cursor() as cursor:
+        cursor.execute("""SELECT * FROM star_goods where username = %s and ifSeen = 1""", [username])
+        products = cursor.fetchall()
+        # 格式化商品数据
+        for product in products:
+            # 如果 product[9] 是 datetime 类型
+            if isinstance(product[9], datetime):  # 检查是否是 datetime 对象
+                update_date = product[9].strftime('%Y-%m-%d %H:%M:%S')  # 将 DATETIME 转换为字符串
+            else:
+                update_date = None  # 如果不是 datetime 对象，返回 None
+            product_info = {
+                "id": product[0],
+                "title": product[3],
+                "price": product[1],
+                "deal": product[2],
+                "shop": product[4],
+                "location": product[5],
+                "postFree": product[6],
+                "product_url": product[7],
+                "img_url": product[8],
+                "update_date":update_date
+            }
+            all_products.append(product_info)
+    # 返回所有商品数据
+    return Response({
+        "total_products": len(all_products),
+        "goods": all_products
+    })
+
+
+@api_view(['POST'])
+def get_unseen_goods_count(request):
+    # 从前端获取 username 参数
+    username = request.data.get('username')
+
+    if not username:
+        return JsonResponse({'error': 'Username is required'}, status=400)
+
+    # 执行数据库查询，查找 ifSeen = 0 且 username 匹配的记录数
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) FROM star_goods 
+            WHERE username = %s AND ifSeen = 0
+        """, [username])
+        count = cursor.fetchone()[0]
+    print(count)
+    # 返回结果给前端
+    return JsonResponse({'unseen_count': count})
 
 # 登录处理函数
 @api_view(['POST'])
@@ -34,6 +132,19 @@ def login_view(request):
         cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", [username, password])
         user = cursor.fetchone()
     if user:
+        # 用户存在，删除当前文件夹下的cookie文件
+        cookie_file = os.path.join(os.getcwd(), f'cookie_jingdong_{username}.txt')  # 获取当前工作目录
+        if os.path.exists(cookie_file):
+            os.remove(cookie_file)
+        cookie_file = os.path.join(os.getcwd(), f'cookie_manmanbuy_{username}.txt')  # 获取当前工作目录
+        if os.path.exists(cookie_file):
+            os.remove(cookie_file)
+        cookie_file = os.path.join(os.getcwd(), f'cookie_taobao_{username}.txt')  # 获取当前工作目录
+        if os.path.exists(cookie_file):
+            os.remove(cookie_file)
+        cookie_file = os.path.join(os.getcwd(), f'cookie_weipinhui_{username}.txt')  # 获取当前工作目录
+        if os.path.exists(cookie_file):
+            os.remove(cookie_file)
         return Response({'message': '登录成功', 'token': username})
     else:
         return Response({'message': '登录失败，用户名或密码错误，或者账号不存在'})
@@ -68,9 +179,16 @@ def register_user(request):
             "INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
             [username, password, email]
         )
+
+        # 检查用户名和邮箱的唯一性
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO UserApps (username, UserApps) VALUES (%s, 'taobao')",
+                [username]
+            )
     return Response({'message': '注册成功'})
 
-from django.core.mail import send_mail
+
 @api_view(['POST'])
 def send_sms_code(request):
     """
@@ -436,9 +554,7 @@ def unstar_goods(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
 
-import random
-import urllib
-from pyquery import PyQuery as pq
+
 
 @api_view(['POST'])
 def search(request):
@@ -614,7 +730,7 @@ def search(request):
                 wait = WebDriverWait(driver, 15)
                 print("开始抓取商品信息...")
                 weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
-                cookie_file_weipinhui = 'cookie_weipinhui.txt'
+                cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
                 if not os.path.exists(cookie_file_weipinhui):
                     driver.get(weipinhui_url)
                     # 等待手动登录完成
@@ -734,6 +850,7 @@ def find_cheapest_good(goods_list, source):
 @api_view(['POST'])
 def price_compare(request):
     searchQuery = request.data.get('searchQuery')
+    username = request.data.get('username')
     goods_taobao = []
     goods_jingdong = []
     goods_weipinhui = []
@@ -873,7 +990,7 @@ def price_compare(request):
         print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
         print("开始抓取商品信息...")
         weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
-        cookie_file_weipinhui = 'cookie_weipinhui.txt'
+        cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
         if not os.path.exists(cookie_file_weipinhui):
             driver.get(weipinhui_url)
             # 等待手动登录完成
@@ -1039,21 +1156,14 @@ def starGood(request):
 def notStarGood(request):
     return True
 
-from flask import Flask, request, jsonify
-import time
-import json
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
-from selenium.webdriver import ActionChains
-import re  # 用于提取价格中的数字
-from urllib.parse import urljoin, urlparse, urlencode, parse_qs
+
 
 
 # 获取历史价格数据并返回图表
 @api_view(['POST'])
 def fetchPriceData(request):
     shop = request.data.get('product_url')  # 使用 request.data 获取 POST 数据
+    username = request.data.get('username')
     print(shop)
     # 修复相对路径并确保正确编码
     parsed_url = urlparse(shop)
@@ -1068,7 +1178,7 @@ def fetchPriceData(request):
     # 打印修复后的 URL
     print("修复后的 URL:", shop)
     # 检查 cookie 文件是否存在
-    cookie_file = 'cookie_manmanbuy.txt'
+    cookie_file = f'cookie_manmanbuy_{username}.txt'
 
     # 设置 Chrome 启动选项
     chrome_options = Options()
@@ -1096,7 +1206,7 @@ def fetchPriceData(request):
     )
 
     taobao_url = 'https://login.taobao.com/'
-    cookie_file_taobao = 'cookie_taobao.txt'
+    cookie_file_taobao = f'cookie_taobao_{username}.txt'
     if not os.path.exists(cookie_file_taobao):
         driver.get(taobao_url)
         # 等待手动登录完成
@@ -1115,7 +1225,7 @@ def fetchPriceData(request):
             driver.add_cookie(cookie)
 
     # jingdong_url = 'https://passport.jd.com/new/login.aspx'
-    # cookie_file_jingdong = 'cookie_jingdong.txt'
+    # cookie_file_jingdong = f'cookie_jingdong_{username}.txt'
     # if not os.path.exists(cookie_file_jingdong):
     #     driver.get(jingdong_url)
     #     # 等待手动登录完成
@@ -1133,7 +1243,7 @@ def fetchPriceData(request):
     #     for cookie in cookies:
     #         driver.add_cookie(cookie)
 
-    cookie_file_weipinhui = 'cookie_weipinhui.txt'
+    cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
     weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
     if not os.path.exists(cookie_file_weipinhui):
         driver.get(weipinhui_url)
@@ -1153,6 +1263,7 @@ def fetchPriceData(request):
             driver.add_cookie(cookie)
     # 访问指定 URL
     driver.get(shop)
+    time.sleep(10) # 验证
     # 获取页面的实际地址
     shop = driver.current_url
     print(shop)
@@ -1206,6 +1317,16 @@ def fetchPriceData(request):
     # 滑动到底部以确保所有数据加载完成
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(5)
+    try:
+        # 尝试查找 "暂未收录" 元素
+        no_data_element = driver.find_element(By.XPATH, "//*[contains(text(), '暂未收录')]")
+        if no_data_element:
+            print("该商品未收录，停止图表查找操作。")
+            driver.quit()
+            return JsonResponse({'success': False, 'message': '暂未收录'})
+    except NoSuchElementException:
+        # 如果没有找到元素，继续执行后续代码
+        print("未找到 '暂未收录' 元素，继续操作。")
 
     # 确定趋势图画布的容器位置
     canvas = driver.find_element(By.ID, "container")  # 根据容器 ID 定位
@@ -1230,7 +1351,9 @@ def fetchPriceData(request):
                 if first_space_index != -1:
                     date = text[:first_space_index].strip()  # 提取日期部分
                     price_str = text[first_space_index + 1:].strip()  # 提取价格部分
-
+                    # 如果日期中包含 "第一次收录"，则跳过当前数据
+                    if "第一次收录" in date:
+                        continue
                     # 提取价格中的数字部分
                     price_match = re.search(r'\d+(\.\d+)?', price_str)
                     if price_match:
@@ -1244,6 +1367,11 @@ def fetchPriceData(request):
     # 关闭浏览器
     driver.quit()
     print("提取到的数据：")
+    # 假设 `data` 是存储日期和价格的元组列表
+    for i, entry in enumerate(data):
+        # 修改 data 中的日期格式
+        formatted_date = format_date(entry[0])  # 将日期格式化
+        data[i] = (formatted_date, entry[1])  # 更新 data 中的日期部分
     for entry in data:
         print(f"日期: {entry[0]}, 价格: {entry[1]}")
 
@@ -1251,34 +1379,12 @@ def fetchPriceData(request):
     if not data:
         return JsonResponse({'success': False, 'message': '没有找到历史价格数据'})
 
-        # 按日期排序
+    return JsonResponse({'success': True, 'data': data, 'message':''})
 
-        # 提取日期和价格
-        dates = [entry[0] for entry in data]
-        prices = [entry[1] for entry in data]
-
-        # 创建图表
-        plt.figure(figsize=(10, 5))
-        plt.plot(dates, prices, marker='o', linestyle='-', color='b')
-        plt.title('历史价格趋势图', fontsize=16)
-        plt.xlabel('日期', fontsize=12)
-        plt.ylabel('价格 (¥)', fontsize=12)
-        plt.xticks(rotation=45)  # 日期标签倾斜显示
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.tight_layout()
-
-        # 显示图表
-        plt.show()
-    # 保存图片到本地
-    plt.savefig('price_history.png', dpi=300, bbox_inches='tight')  # 设定保存路径和文件格式
-
-    # 将图表保存到内存
-    img_io = io.BytesIO()
-    plt.savefig(img_io, format='png')
-    img_io.seek(0)
-
-    # 将图像转换为 Base64 编码的字符串
-    img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
-
-    # 返回图像的 Base64 编码
-    return JsonResponse({'success': True, 'image_data': img_base64})
+# 将日期从 "2024年8月20日" 格式转换为 "2024-8-20" 格式
+def format_date(date_str):
+    match = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日", date_str)
+    if match:
+        year, month, day = match.groups()
+        return f"{year}-{int(month)}-{int(day)}"
+    return date_str  # 如果无法匹配，返回原始日期

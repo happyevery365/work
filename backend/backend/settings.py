@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "searchprice",  # 添加你的应用
 ]
 
 MIDDLEWARE = [
@@ -102,7 +103,12 @@ DATABASES = {
 
         'USER': 'root',  # mysql的用户名
 
-        'PASSWORD': 'kSY13630945535'  # mysql的密码
+        'PASSWORD': 'kSY13630945535',  # mysql的密码
+
+        'OPTIONS': {
+            'sql_mode': 'STRICT_TRANS_TABLES',
+            'isolation_level': 'READ COMMITTED',  # 设定事务隔离级别
+        },
 
 }
 

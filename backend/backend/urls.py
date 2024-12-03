@@ -35,6 +35,9 @@ from .views import searchIfStarred
 from .views import star_goods
 from .views import unstar_goods
 from .views import get_preferrence_goods
+from .views import get_unseen_goods_count
+from .views import newChangedGoods
+from .views import oldChangedGoods
 
 urlpatterns = [
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
@@ -56,5 +59,8 @@ urlpatterns = [
     path('api/searchIfStarred/', searchIfStarred, name='searchIfStarred'),
     path('api/star_goods/', star_goods, name='star_goods'),
     path('api/unstar_goods/', unstar_goods, name='unstar_goods'),
+    path('api/get-unseen-goods-count/', get_unseen_goods_count, name='get_unseen_goods_count'),
+    path('api/newChangedGoods/', newChangedGoods, name='newChangedGoods'),
+    path('api/oldChangedGoods/', oldChangedGoods, name='oldChangedGoods'),
 ]
 

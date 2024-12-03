@@ -104,7 +104,7 @@ export default {
         });
         this.loginMessage = response.data.message;
         if (response.data.message === '登录成功') {
-          this.loginMessage = '登录成功，正在检查喜好...';
+          //this.loginMessage = '登录成功，正在检查喜好...';
           localStorage.setItem('token', response.data.token);
           await this.checkUserPreferences();
         } else {

@@ -11,6 +11,8 @@ import MyRoom from '../views/index/MyRoom';
 import ChangePassword from '../views/index/ChangePassword';
 import ChangePreferences from '../views/index/ChangePreferences';
 import MyFavorites from '../views/index/MyFavorites';
+import DiscountInfo from '../views/index/DiscountInfo';
+import GradientLineChart from '../Charts/GradientLineChart';
 
 const routes = [
   {
@@ -83,7 +85,19 @@ const routes = [
     name: 'MyFavorites',
     component: MyFavorites,
     meta: { requiresAuth: true },
-  }
+  },
+  {
+    path: '/GradientLineChart',
+    name: 'GradientLineChart',
+    component: GradientLineChart,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/DiscountInfo',
+    name: 'DiscountInfo',
+    component: DiscountInfo,
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({

@@ -6,7 +6,6 @@
     </div>
   </div>
 
-  <!-- 用户信息和退出登录按钮 -->
   <div class="user-info">
     <span class="username">为提高正确性，请详细填写以下信息</span>
   </div>

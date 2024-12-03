@@ -10,6 +10,8 @@
   <div class="action-bar">
     <div class="action-item" v-for="(action, index) in actions" :key="index" @click="action.handler">
       {{ action.name }}
+      <!-- 如果是降价信息，显示未查看商品的数量 -->
+        <span v-if="action.name === '降价信息' && unseenCount > 0" class="unseen-count">{{ unseenCount }}</span>
     </div>
   </div>
 
@@ -37,6 +39,7 @@ export default {
       appImages: [],
       goods: [],
       username: '',
+      unseenCount: 0,
       navItems: [
         {name: '首页', page: 'GoodsPage'},
         {name: '分类', page: 'Product_Categories'},
@@ -55,14 +58,25 @@ export default {
   },
   created() {
     const username = this.$route.query.username;
+    this.unseenCount = 0;
     if (username) {
       this.username = username;
     }
+    this.fetchUnseenGoodsCount();
   },
   mounted() {
     this.fetchAppImages();
   },
   methods: {
+    // 获取未查看商品的数量
+    async fetchUnseenGoodsCount() {
+      try {
+        const response = await axios.post('http://192.168.117.146:8000/api/get-unseen-goods-count/',{username: this.username});
+        this.unseenCount = response.data.unseen_count;  // 更新未查看商品数量
+      } catch (error) {
+        console.error("Error fetching unseen goods count:", error);
+      }
+    },
     async fetchAppImages() {
       const response = await axios.get('http://192.168.117.146:8000/api/get-app-images/');
       this.appImages = response.data.appImages;
@@ -185,5 +199,18 @@ html, body {
 h2 {
   font-size: 4.5vw;
   margin-top: 4vh;
+}
+
+.unseen-count {
+  display: inline-block;
+  width: 12px;  /* 圆圈直径，增加一点空间 */
+  height: 12px;  /* 圆圈高度 */
+  line-height: 12px;  /* 文字垂直居中 */
+  border-radius: 50%;  /* 圆形 */
+  background-color: red;  /* 红色背景 */
+  color: white;  /* 白色文字 */
+  font-size: 6px;  /* 数字大小 */
+  text-align: center;  /* 水平居中 */
+  margin-left: 5px;  /* 左侧间距 */
 }
 </style>
