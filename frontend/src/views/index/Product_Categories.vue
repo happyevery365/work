@@ -39,6 +39,7 @@
 
 <script>
 import axios from "axios";
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -58,9 +59,11 @@ export default {
         { name: '我的', page: 'MyRoom' }
       ],
       currentPage: 'Product_Categories', // Set the current page as "Product_Categories"
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     // 获取登录时传递的用户名并存储到 username 变量
     const username = this.$route.query.username;
     if (username) {
@@ -83,7 +86,7 @@ export default {
   },
   methods: {
     async fetchAppImages() {
-      const response = await axios.get('http://192.168.117.146:8000/api/get-app-images/');
+      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     // 根据中文类别名称跳转到对应的英文页面

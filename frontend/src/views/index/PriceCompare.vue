@@ -128,6 +128,7 @@
 
 <script>
 import axios from "axios";
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -148,10 +149,12 @@ export default {
         { name: '比价', page: 'PriceCompare' },
         { name: '我的', page: 'MyRoom' }
       ],
-      currentPage: 'PriceCompare'
+      currentPage: 'PriceCompare',
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     const username = this.$route.query.username;
     if (username) {
       this.username = username;
@@ -169,7 +172,7 @@ export default {
       // 合并 searchQuery、brand 和 specification，使用空格分隔
       const combinedQuery = `${this.brand} ${this.searchQuery} ${this.specification}`.trim();
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/price_compare/', {
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/price_compare/`, {
           searchQuery: combinedQuery,
           username: this.username,
         });
@@ -183,7 +186,7 @@ export default {
       }
     },
     async fetchAppImages() {
-      const response = await axios.get('http://192.168.117.146:8000/api/get-app-images/');
+      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

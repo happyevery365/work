@@ -48,6 +48,7 @@
 
 <script>
 import axios from "axios";
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -63,10 +64,12 @@ export default {
         { name: '比价', page: 'PriceCompare' },
         { name: '我的', page: 'MyRoom' }
       ],
-      currentPage: 'MyRoom'
+      currentPage: 'MyRoom',
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     const username = this.$route.query.username;
     if (username) {
       this.username = username;
@@ -77,15 +80,15 @@ export default {
   },
   methods: {
     async newChangedGoods() {
-      const response = await axios.post('http://192.168.117.146:8000/api/newChangedGoods/', {username: this.username});
+      const response = await axios.post(`http://${this.ipAddress}:8000/api/newChangedGoods/`, {username: this.username});
       this.goods = response.data.goods;
     },
     async oldChangedGoods() {
-      const response = await axios.post('http://192.168.117.146:8000/api/oldChangedGoods/', {username: this.username});
+      const response = await axios.post(`http://${this.ipAddress}:8000/api/oldChangedGoods/`, {username: this.username});
       this.goods_old = response.data.goods;
     },
     async fetchAppImages() {
-      const response = await axios.get('http://192.168.117.146:8000/api/get-app-images/');
+      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

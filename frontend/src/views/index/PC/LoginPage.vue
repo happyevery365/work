@@ -1,253 +1,116 @@
-<style>
-	.center {
-		width: 1920px;
-		height: 1080px;
-		background-image: url('https://gd-hbimg.huaban.com/9165dc3c0f8279ae5402d1f47212847bff68b49f3cb547-QEli8R');
-		background-size: 100% 100%;
-		background-repeat: no-repeat;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-	}
+<script setup>
+import { onBeforeUnmount, onBeforeMount } from "vue";
+import { useStore } from "vuex";
 
-	h1 {
-		font-size: 30px;
-		color: black;
-	}
+import ArgonInput from "@/components/ArgonInput.vue";
+import ArgonSwitch from "@/components/ArgonSwitch.vue";
+import ArgonButton from "@/components/ArgonButton.vue";
+const body = document.getElementsByTagName("body")[0];
 
-	.logon {
-		background-color: #fff;
-		border-radius: 10px;
-		box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
-		/* position: relative;
-		overflow: hidden; */
-		width: 768px;
-		max-width: 100%;
-		min-height: 480px;
-		margin-top: 20px;
-		display: flex;
-		background: -webkit-linear-gradient(right, #4284db, #29eac4);
-	}
-
-	.overlaylong {
-		border-radius: 10px 0 0 10px;
-		width: 50%;
-		height: 100%;
-		background-color: #fff;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.overlaylongleft {
-		border-radius: 0px 10px 10px 0px;
-		width: 50%;
-		height: 100%;
-		background-color: #fff;
-		transform: translateX(100%);
-		transition: transform 0.6s ease-in-out;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.overlaylongright {
-		border-radius: 10px 0 0 10px;
-		width: 50%;
-		height: 100%;
-		background-color: #fff;
-		transform: translateX(0%);
-		transition: transform 0.6s ease-in-out;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.overlaytitle {
-		border-radius: 0px 10px 10px 0px;
-		width: 50%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-
-	.overlaytitleH2 {
-		font-size: 30px;
-		color: #fff;
-		margin-top: 20px;
-	}
-
-	.overlaytitleP {
-		font-size: 15px;
-		color: #fff;
-		margin-top: 20px;
-	}
-
-	.overlaytitleleft {
-		border-radius: 0px 10px 10px 0px;
-		width: 50%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transform: translateX(0%);
-		transition: transform 0.6s ease-in-out;
-	}
-
-	.overlaytitleright {
-		border-radius: 0px 10px 10px 0px;
-		width: 50%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transform: translateX(-100%);
-		transition: transform 0.6s ease-in-out;
-	}
-
-	.overlaytitle-Signin {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-	}
-
-	.overlaytitle-Signup {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-	}
-
-	.buttongohs {
-		width: 180px;
-		height: 40px;
-		border-radius: 50px;
-		border: 1px solid #fff;
-		color: #fff;
-		font-size: 15px;
-		text-align: center;
-		line-height: 40px;
-		margin-top: 40px;
-	}
-
-	.overlaylongH2 {
-		font-size: 25px;
-		color: black;
-		/* width: 250px; */
-	}
-
-	.overlaylong-Signin {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-	}
-
-	.overlaylong-Signup {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-	}
-
-	input {
-		background-color: #eee;
-		border: none;
-		padding: 12px 15px;
-		margin: 10px 0;
-		width: 240px;
-	}
-	h3{
-		font-size: 10px;
-		margin-top: 10px;
-		cursor: pointer;
-	}
-	.inupbutton{
-		background-color: #29eac4;
-		border: none;
-		width: 180px;
-		height: 40px;
-		border-radius: 50px;
-		font-size: 15px;
-		color: #fff;
-		text-align: center;
-		line-height: 40px;
-		margin-top: 30px;
-	}
-</style>
-
-<template>
-	<div class="center">
-		<h1>Sign in/ Sign up</h1>
-		<div class="logon">
-			<div :class="overlaylong">
-				<div class="overlaylong-Signin" v-if="disfiex == 0">
-					<h2 class="overlaylongH2">Sign in</h2>
-					<input type="text" placeholder="user">
-					<input type="text" placeholder="password">
-					<h3>Forgot your password?</h3>
-					<button class="inupbutton">Sign in</button>
-				</div>
-				<div class="overlaylong-Signup" v-if="disfiex == 1">
-					<h2 class="overlaylongH2">Registered Account</h2>
-					<input type="text" placeholder="user">
-					<input type="text" placeholder="password">
-					<button class="inupbutton">Sign up</button>
-				</div>
-
-			</div>
-			<div :class="overlaytitle">
-				<div class="overlaytitle-Signin" v-if="disfiex == 0">
-					<h2 class="overlaytitleH2">Hello,Friend!</h2>
-					<p class="overlaytitleP">
-						Enter your personal details and start journey with us
-					</p>
-					<div class="buttongohs" @click="Signin">Sign up</div>
-				</div>
-				<div class="overlaytitle-Signup" v-if="disfiex == 1">
-					<h2 class="overlaytitleH2">Welcome Back!</h2>
-					<p class="overlaytitleP">To keep connected with us please login with your personal info</p>
-					<div class="buttongohs" @click="Signup">Sign in</div>
-				</div>
-			</div>
-		</div>
-
-	</div>
-</template>
-
-<script>
-	export default {
-		data() {
-			return {
-				overlaylong: 'overlaylong',
-				overlaytitle: 'overlaytitle',
-				disfiex: 0
-			}
-		},
-		methods: {
-			Signin() {
-				this.overlaylong = "overlaylongleft"
-				this.overlaytitle = "overlaytitleright"
-				setTimeout(() => {
-					this.disfiex = 1
-				}, 200)
-			},
-			Signup() {
-				this.overlaylong = "overlaylongright"
-				this.overlaytitle = "overlaytitleleft"
-
-				setTimeout(() => {
-					this.disfiex = 0
-				}, 200)
-
-			}
-		}
-	}
+const store = useStore();
+onBeforeMount(() => {
+  store.state.hideConfigButton = true;
+  store.state.showNavbar = false;
+  store.state.showSidenav = false;
+  store.state.showFooter = false;
+  body.classList.remove("bg-gray-100");
+});
+onBeforeUnmount(() => {
+  store.state.hideConfigButton = false;
+  store.state.showNavbar = true;
+  store.state.showSidenav = true;
+  store.state.showFooter = true;
+  body.classList.add("bg-gray-100");
+});
 </script>
+<template>
+
+  <main class="mt-0 main-content">
+    <section>
+      <div class="page-header min-vh-100">
+        <div class="container">
+          <div class="row">
+            <div
+              class="mx-auto col-xl-4 col-lg-5 col-md-7 d-flex flex-column mx-lg-0"
+            >
+              <div class="card card-plain">
+                <div class="pb-0 card-header text-start">
+                  <h4 class="font-weight-bolder">登录</h4>
+                  <p class="mb-0">输入账号和密码</p>
+                </div>
+                <div class="card-body">
+                  <form role="form">
+                    <div class="mb-3">
+                      <argon-input
+                        id="email"
+                        type="email"
+                        placeholder="账号"
+                        name="email"
+                        size="lg"
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <argon-input
+                        id="password"
+                        type="password"
+                        placeholder="密码"
+                        name="password"
+                        size="lg"
+                      />
+                    </div>
+                    <argon-switch id="rememberMe" name="remember-me"
+                      >记住我</argon-switch
+                    >
+
+                    <div class="text-center">
+                      <argon-button
+                        class="mt-4"
+                        variant="gradient"
+                        color="success"
+                        fullWidth
+                        size="lg"
+                        >登录</argon-button
+                      >
+                    </div>
+                  </form>
+                </div>
+                <div class="px-1 pt-0 text-center card-footer px-lg-2">
+                  <p class="mx-auto mb-4 text-sm">
+                    没有账号?
+                    <a
+                      href="javascript:;"
+                      class="text-success text-gradient font-weight-bold"
+                      >注册</a
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="top-0 my-auto text-center col-6 d-lg-flex d-none h-100 pe-0 position-absolute end-0 justify-content-center flex-column"
+            >
+              <div
+                class="position-relative bg-gradient-primary h-100 m-3 px-7 border-radius-lg d-flex flex-column justify-content-center overflow-hidden"
+                style="
+                  background-image: url(&quot;https://file.moyublog.com/d/file/2023-04-10/2b0e8b76d4fcd03e74dd592bc5a53bde.jpg&quot;);
+                  background-size: cover;
+                "
+              >
+                <span class="mask bg-gradient-success opacity-6"></span>
+                <h4
+                  class="mt-5 text-white font-weight-bolder position-relative"
+                >
+                  "Mr. K的比价网页"
+                </h4>
+                <p class="text-white position-relative">
+                  The more effortless the writing looks, the more effort the
+                  writer actually put into the process.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</template>

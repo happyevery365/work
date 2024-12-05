@@ -27,6 +27,7 @@ from selenium.webdriver import ActionChains
 import re  # 用于提取价格中的数字
 from urllib.parse import urljoin, urlparse, urlencode, parse_qs
 from datetime import datetime
+from django.conf import settings
 
 
 @api_view(['POST'])

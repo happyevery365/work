@@ -18,16 +18,19 @@
 
 <script>
 import axios from 'axios';
+import { ipAddress } from './config.js';
 
 export default {
   data() {
     return {
       goods: [],
       username: '',
-      searchQuery: ''
+      searchQuery: '',
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     this.searchQuery = this.$route.query.searchQuery;
     this.username = this.$route.query.username;
     this.SearchProducts();
@@ -35,7 +38,7 @@ export default {
   methods: {
     async SearchProducts() {
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/search/', {
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/search/`, {
           searchQuery: this.searchQuery,
           username: this.username
         });

@@ -35,6 +35,7 @@
 
 <script>
 import axios from 'axios';
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -59,8 +60,12 @@ export default {
         email: '',
         test: '',
         verifycode: ''
-      }
+      },
+      ipAddress:''
     };
+  },
+  created() {
+    this.ipAddress = ipAddress;
   },
   methods: {
     switchToLogin() {
@@ -98,7 +103,7 @@ export default {
     },
     async login() {
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/login/', {
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/login/`, {
           username: this.loginData.username,
           password: this.loginData.password
         });
@@ -117,7 +122,7 @@ export default {
     },
     async checkUserPreferences() {
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/check-preferences/', {
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/check-preferences/`, {
           username: this.loginData.username,
         });
         if (response.data.has_preferences) {
@@ -139,7 +144,7 @@ export default {
     } else if (!emailRegex.test(this.registerData.email)) {
       this.registerMessage = '请检查邮箱格式'; // 邮箱格式错误提示
     } else {
-      const response = await axios.post('http://192.168.117.146:8000/api/send_sms_code/', {
+      const response = await axios.post(`http://${this.ipAddress}:8000/api/send_sms_code/`, {
         to_email: this.registerData.email,
       });
       if (response.data.ifsend) {
@@ -207,7 +212,7 @@ export default {
       }
 
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/register/', {
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/register/`, {
           username: this.registerData.username,
           password: this.registerData.password,
           email: this.registerData.email

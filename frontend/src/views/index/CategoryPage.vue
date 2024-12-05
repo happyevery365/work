@@ -49,6 +49,7 @@
 
 <script>
 import axios from 'axios';
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -62,10 +63,12 @@ export default {
         JingDong: false,
         PinDuoDuo: false,
         TianMao: false
-      }
+      },
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     this.englishName = this.$route.query.category;
     this.username = this.$route.query.username;
     this.fetchProducts();
@@ -73,7 +76,7 @@ export default {
   methods: {
     async fetchProducts() {
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/get_category/', {data: this.englishName});
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/get_category/`, {data: this.englishName});
         this.goods = response.data.goods;
       } catch (error) {
         console.error("Failed to fetch products:", error);

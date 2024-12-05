@@ -31,6 +31,7 @@
 
 <script>
 import axios from "axios";
+import { ipAddress } from './config.js';
 
 export default {
   data() {
@@ -53,10 +54,12 @@ export default {
         {name: '降价信息', handler: () => this.$router.push({name: 'DiscountInfo', query: {username: this.username}})},
         {name: '退出登录', handler: () => this.logout()}
       ],
-      currentPage: 'MyRoom'
+      currentPage: 'MyRoom',
+      ipAddress:''
     };
   },
   created() {
+    this.ipAddress = ipAddress;
     const username = this.$route.query.username;
     this.unseenCount = 0;
     if (username) {
@@ -71,14 +74,14 @@ export default {
     // 获取未查看商品的数量
     async fetchUnseenGoodsCount() {
       try {
-        const response = await axios.post('http://192.168.117.146:8000/api/get-unseen-goods-count/',{username: this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8000/api/get-unseen-goods-count/`,{username: this.username});
         this.unseenCount = response.data.unseen_count;  // 更新未查看商品数量
       } catch (error) {
         console.error("Error fetching unseen goods count:", error);
       }
     },
     async fetchAppImages() {
-      const response = await axios.get('http://192.168.117.146:8000/api/get-app-images/');
+      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import socket
+
+# 获取本地IP地址（例如获取主机的第一个非127.0.0.1的IP地址）
+SERVER_IP = socket.gethostbyname(socket.gethostname())
 
 # 发送邮箱验证码
 EMAIL_HOST = "smtp.qq.com"     # 服务器
@@ -160,5 +164,5 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:8080',
     'http://192.168.117.146:8080',  # 如果前端使用这个IP
     'http://10.193.226.64:8080',  # 如果前端使用这个IP
-
+    'http://10.196.162.124:8080',  # 如果前端使用这个IP
 ]
