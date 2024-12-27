@@ -2,8 +2,18 @@
   <div>
     <!-- 返回按钮 -->
     <button @click="goBack" class="back-button">返回</button>
+
+    <div v-if="goods.length">
+    <div class="products-grid">
+        <button @click="selectPlatform('taobao')" :class="{'selected': selectedPlatform === 'taobao'}">淘宝</button>
+        <button @click="selectPlatform('jingdong')" :class="{'selected': selectedPlatform === 'jingdong'}">京东</button>
+        <button @click="selectPlatform('weipinhui')" :class="{'selected': selectedPlatform === 'weipinhui'}">唯品会</button>
+        <button @click="selectPlatform('priceless')" :class="{'selected': selectedPlatform === 'priceless'}">最便宜</button>
+    </div>
     <!-- 商品展示 -->
-    <div v-if="goods.length" class="products-grid">
+    <div class="products-grid">
+      <!-- 平台选择按钮 -->
+
       <div class="product-item" v-for="(item, index) in goods" :key="index" @click="goToDetailPage(item)">
         <img :src="item.img_url" alt="商品图片" class="product-image" />
         <div class="product-details">
@@ -11,6 +21,7 @@
           <p class="product-price">价格: {{ item.price }}</p>
         </div>
       </div>
+    </div>
     </div>
     <p v-else>正在搜索</p>
   </div>
@@ -23,10 +34,17 @@ import { ipAddress } from './config.js';
 export default {
   data() {
     return {
-      goods: [],
+      goods: [],  // 用于存储商品列表
       username: '',
       searchQuery: '',
-      ipAddress:''
+      ipAddress: '',
+      selectedPlatform: 'taobao', // 默认平台为淘宝
+      platformData: {
+        taobao_goods: [],
+        jingdong_goods: [],
+        weipinhui_goods: [],
+        priceless_goods: []
+      }
     };
   },
   created() {
@@ -38,31 +56,41 @@ export default {
   methods: {
     async SearchProducts() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/search/`, {
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/search/`, {
           searchQuery: this.searchQuery,
           username: this.username
         });
-        this.goods = response.data.goods;
+
+        // 获取返回的商品数据
+        this.platformData.taobao_goods = response.data.taobao_goods;
+        this.platformData.jingdong_goods = response.data.jingdong_goods;
+        this.platformData.weipinhui_goods = response.data.weipinhui_goods;
+        this.platformData.priceless_goods = response.data.priceless_product;
+
+        // 默认显示淘宝商品
+        this.goods = this.platformData.taobao_goods;
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }
     },
+    // 切换平台显示的商品
+    selectPlatform(platform) {
+      this.selectedPlatform = platform;
+      this.goods = this.platformData[`${platform}_goods`]; // 根据选择的平台更新商品列表
+    },
     goBack() {
-      this.$router.push({ name: 'GoodsPage', query: { username: this.username } });
+      this.$router.push({name: 'GoodsPage', query: {username: this.username}});
     },
     goToDetailPage(item) {
       // 构造目标页面 URL
-    const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(
-      this.username
-    )}&product=${encodeURIComponent(JSON.stringify(item))}`;
+      const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(this.username)}&product=${encodeURIComponent(JSON.stringify(item))}`;
 
-    // 在新窗口中打开目标页面
-    window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口
+      // 在新窗口中打开目标页面
+      window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口
     },
   }
 };
 </script>
-
 
 <style scoped>
 /* 返回按钮样式 */
@@ -80,6 +108,27 @@ export default {
   background-color: #0056b3;
 }
 
+/* 平台选择按钮样式 */
+.platform-selection {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px; /* 给平台选择框和商品展示区域之间添加一些空间 */
+}
+
+.platform-selection button {
+  padding: 10px 20px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.platform-selection button.selected {
+  background-color: orange;
+  color: white;
+  border-color: orange;
+}
 
 .products-grid {
   display: grid;

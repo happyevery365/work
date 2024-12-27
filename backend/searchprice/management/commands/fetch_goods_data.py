@@ -40,6 +40,37 @@ EMAIL_USE_TLS = True       # 一般都为False
 EMAIL_FROM = "2519639200@qq.com"      # 邮箱来自
 email_title = '邮箱激活'
 
+import re
+
+
+# 用于去除单个价格中的重复数字（例如 '2297.11 2297.11'）
+def remove_duplicates_from_price(price):
+    # 用正则去除重复的数字，保留第一个
+    price_parts = price.split()  # 假设价格是以空格分隔的
+    unique_price = " ".join(sorted(set(price_parts), key=price_parts.index))  # 去重并保留顺序
+    return unique_price
+
+
+# 对 all_price 列表中的每个价格进行去重处理
+def remove_duplicates_from_price_list(price_list):
+    unique_prices = []  # 存储最终去重后的价格列表
+
+    for price in price_list:
+        # 如果价格是有效的（非 "未找到商品价格"）
+        if price != "未找到商品价格":
+            price = remove_duplicates_from_price(price)  # 去重处理
+            unique_prices.append(price)
+        else:
+            unique_prices.append(price)
+
+    return unique_prices
+def extract_number(price_str):
+    """从字符串中提取数字并返回"""
+    match = re.search(r'\d+(\.\d+)?', price_str)
+    if match:
+        return float(match.group(0))  # 转换为浮动数字
+    return 0  # 如果没有找到数字，返回 0
+
 class Command(BaseCommand):  # 将类名改为 Command
     help = '每12小时从数据库中提取用户名和商品链接并更新商品价格'
 
@@ -56,7 +87,7 @@ class Command(BaseCommand):  # 将类名改为 Command
                 product_urls = [row[1] for row in result]
                 # 调用get_product_price获取所有的价格
                 price_list = self.get_product_price(product_urls)  # 返回的价格数组
-
+                print('price_list', price_list)
                 # 更新价格
                 for idx, row in enumerate(result):
                     username = row[0]
@@ -68,15 +99,23 @@ class Command(BaseCommand):  # 将类名改为 Command
                     if newprice == "未找到商品价格":
                         continue
                     if price != newprice:
-                        with connection.cursor() as cursor:
-                            cursor.execute(
-                                "UPDATE star_goods SET price = %s, update_date = NOW(), ifSeen = 0 WHERE username = %s and product_url = %s",
-                                (newprice, username, product_url))
-                        with connection.cursor() as cursor:
-                            cursor.execute("SELECT email from users WHERE username = %s", (username,))
-                            email = cursor.fetchone()
-                            print(email[0])
-                        self.send_email(product_url, title, price, email[0])  # 发送邮件
+                        print(price)
+                        print(newprice)
+                        # 提取 newprice 和 price 中的数字
+                        new_price_value = extract_number(newprice)
+                        price_value = extract_number(price)
+
+                        # 条件：newprice 提取出的数字不为 0，且 newprice 提取出的数字小于 price 提取出的数字
+                        if new_price_value != 0 and new_price_value < price_value:
+                            with connection.cursor() as cursor:
+                                cursor.execute(
+                                    "UPDATE star_goods SET price = %s, update_date = NOW(), ifSeen = 0 WHERE username = %s and product_url = %s",
+                                    (newprice, username, product_url))
+                            with connection.cursor() as cursor:
+                                cursor.execute("SELECT email from users WHERE username = %s", (username,))
+                                email = cursor.fetchone()
+                                print(email[0])
+                            self.send_email(product_url, title, price, email[0])  # 发送邮件
                 print('价格更新完成')
                 # 每12小时运行一次
                 time.sleep(12 * 60 * 60)  # 12小时
@@ -185,15 +224,13 @@ class Command(BaseCommand):  # 将类名改为 Command
 
             # 打印修复后的 URL
             print("修复后的 URL:", shop)
-
-
             # 访问指定 URL
             driver.get(shop)
-            time.sleep(10)  # 验证
+            time.sleep(2)  # 验证
             # 获取页面的实际地址
             shop = driver.current_url
             print(shop)
-            time.sleep(1)
+            time.sleep(0.5)
             if 'item.taobao.com' in shop or 'detail.tmall.com' in shop:
                 html = driver.page_source
                 doc = pq(html)
@@ -204,20 +241,23 @@ class Command(BaseCommand):  # 将类名改为 Command
                     if not item:
                         print(f"未找到商品价格")
                         all_price.append("未找到商品价格")
+                    else:
+                        try:
+                            price = item.find('.priceText--gdYzG_l_').eq(0).text()
+                            print(price)
+                            all_price.append(price)
+                        except Exception as e:
+                            print(f"商品抓取失败: {e}")
+                            all_price.append("未找到商品价格")
+                else:
                     try:
-                        price = item.find('.priceText--gdYzG_l_').eq(0).text()
+                        price = item.find('.text--fZ9NUhyQ').text()
                         print(price)
+                        all_price.append(price)
                     except Exception as e:
                         print(f"商品抓取失败: {e}")
                         all_price.append("未找到商品价格")
-                    all_price.append(price)
-                try:
-                    price = item.find('.text--fZ9NUhyQ').text()
-                    print(price)
-                except Exception as e:
-                    print(f"商品抓取失败: {e}")
-                    all_price.append("未找到商品价格")
-                all_price.append(price)
+
             # elif 'item.jd.com' in shop:
             #     html = driver.page_source
             #     doc = pq(html)
@@ -248,6 +288,10 @@ class Command(BaseCommand):  # 将类名改为 Command
             #     all_price.append(price)
             else:
                 all_price.append("未找到商品价格")
+        # 在最后对 all_price 进行处理，去掉重复的价格
+        all_price = remove_duplicates_from_price_list(all_price)
+        print('all_price')
+        print(all_price)
         return all_price
 
     def send_email(self, product_url, title, price, email):

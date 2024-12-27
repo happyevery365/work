@@ -78,7 +78,7 @@ export default {
     },
     async changePreferences() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/change-preferences/`, {
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/change-preferences/`, {
           username: this.username,
           preferences: this.selectedPreferences
         });

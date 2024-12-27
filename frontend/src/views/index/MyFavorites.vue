@@ -55,11 +55,11 @@ export default {
   },
   methods: {
     async fetchPreferrences() {
-      const response = await axios.post(`http://${this.ipAddress}:8000/api/get-preferrencegoods/`, {username: this.username});
+      const response = await axios.post(`http://${this.ipAddress}:8080/api/get-preferrencegoods/`, {username: this.username});
       this.goods = response.data.goods;
     },
     async fetchAppImages() {
-      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
+      const response = await axios.get(`http://${this.ipAddress}:8080/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToDetailPage(item) {

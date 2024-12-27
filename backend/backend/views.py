@@ -27,7 +27,6 @@ from selenium.webdriver import ActionChains
 import re  # 用于提取价格中的数字
 from urllib.parse import urljoin, urlparse, urlencode, parse_qs
 from datetime import datetime
-from django.conf import settings
 
 
 @api_view(['POST'])
@@ -98,6 +97,7 @@ def oldChangedGoods(request):
             }
             all_products.append(product_info)
     # 返回所有商品数据
+    print(all_products)
     return Response({
         "total_products": len(all_products),
         "goods": all_products
@@ -133,19 +133,6 @@ def login_view(request):
         cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", [username, password])
         user = cursor.fetchone()
     if user:
-        # 用户存在，删除当前文件夹下的cookie文件
-        cookie_file = os.path.join(os.getcwd(), f'cookie_jingdong_{username}.txt')  # 获取当前工作目录
-        if os.path.exists(cookie_file):
-            os.remove(cookie_file)
-        cookie_file = os.path.join(os.getcwd(), f'cookie_manmanbuy_{username}.txt')  # 获取当前工作目录
-        if os.path.exists(cookie_file):
-            os.remove(cookie_file)
-        cookie_file = os.path.join(os.getcwd(), f'cookie_taobao_{username}.txt')  # 获取当前工作目录
-        if os.path.exists(cookie_file):
-            os.remove(cookie_file)
-        cookie_file = os.path.join(os.getcwd(), f'cookie_weipinhui_{username}.txt')  # 获取当前工作目录
-        if os.path.exists(cookie_file):
-            os.remove(cookie_file)
         return Response({'message': '登录成功', 'token': username})
     else:
         return Response({'message': '登录失败，用户名或密码错误，或者账号不存在'})
@@ -158,10 +145,10 @@ def register_user(request):
     password = request.data.get('password')
     email = request.data.get('email')
 
-    if len(username) < 6:
-        return Response({'message': '用户名要大于等于六字节'})
-    if len(password) < 6:
-        return Response({'message': '密码要大于等于六字节'})
+    if len(username) <= 6:
+        return Response({'message': '用户名要大于六字节'})
+    if len(password) <= 6:
+        return Response({'message': '密码要大于六字节'})
     if(len(email) <= 0):
         return Response({'message': '邮箱不能为空'})
 
@@ -181,12 +168,6 @@ def register_user(request):
             [username, password, email]
         )
 
-        # 检查用户名和邮箱的唯一性
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO UserApps (username, UserApps) VALUES (%s, 'taobao')",
-                [username]
-            )
     return Response({'message': '注册成功'})
 
 
@@ -347,6 +328,7 @@ def get_preferrence_goods(request):
 @api_view(['POST'])
 def check_user_preferences(request):
     username = request.data.get('username')
+    print(username)
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT category FROM user_preferences WHERE username = %s
@@ -356,9 +338,137 @@ def check_user_preferences(request):
     # 返回用户喜好
     if preferences:
         categories = [item[0] for item in preferences]
+        print(categories)
         return JsonResponse({'has_preferences': True, 'preferences': categories})
     else:
         return JsonResponse({'has_preferences': False})
+
+@api_view(['POST'])
+def check_user_preference_category(request):
+    username = request.data.get('username')
+    print(username)
+    # 完整的类别列表
+    all_categories = [
+        '电脑', '配件', '办公', '文具', '工业', '商业', '农业', '家电', '手机', '通信',
+        '数码', '家具', '家装', '家居', '厨具', '女装', '男装', '内衣', '配饰', '女鞋', '男鞋',
+        '运动', '户外', '汽车', '珠宝', '文玩', '箱包', '食品', '生鲜', '酒类', '健康', '母婴',
+        '童装', '玩具', '宠物', '美妆', '个户', '家清', '香氛', '娱乐', '图书', '乐器', '鲜花'
+    ]
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT category FROM user_preferences WHERE username = %s
+        """, [username])
+        preferences = cursor.fetchall()
+
+    # 如果用户有偏好的类别
+    if preferences:
+        # 提取用户的偏好类别
+        user_preferences = [item[0] for item in preferences]
+        # 找出用户未选择的类别
+        not_preferred_categories = [category for category in all_categories if category not in user_preferences]
+        print(user_preferences)
+        return JsonResponse({'has_preferences': True, 'user_preferences': user_preferences})
+    else:
+        # 如果用户没有偏好，返回完整类别列表
+        return JsonResponse({'has_preferences': False, 'not_preferred_categories': all_categories})
+
+@api_view(['POST'])
+def check_user_not_preferences(request):
+    username = request.data.get('username')
+    print(username)
+    # 完整的类别列表
+    all_categories = [
+        '电脑', '配件', '办公', '文具', '工业', '商业', '农业', '家电', '手机', '通信',
+        '数码', '家具', '家装', '家居', '厨具', '女装', '男装', '内衣', '配饰', '女鞋', '男鞋',
+        '运动', '户外', '汽车', '珠宝', '文玩', '箱包', '食品', '生鲜', '酒类', '健康', '母婴',
+        '童装', '玩具', '宠物', '美妆', '个户', '家清', '香氛', '娱乐', '图书', '乐器', '鲜花'
+    ]
+
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT category FROM user_preferences WHERE username = %s
+        """, [username])
+        preferences = cursor.fetchall()
+
+    # 如果用户有偏好的类别
+    if preferences:
+        # 提取用户的偏好类别
+        user_preferences = [item[0] for item in preferences]
+        # 找出用户未选择的类别
+        not_preferred_categories = [category for category in all_categories if category not in user_preferences]
+
+        return JsonResponse({'has_preferences': True, 'not_preferred_categories': not_preferred_categories})
+    else:
+        # 如果用户没有偏好，返回完整类别列表
+        return JsonResponse({'has_preferences': False, 'not_preferred_categories': all_categories})
+
+@api_view(['POST'])
+def save_cookie(request):
+    cookie_file = os.path.join(os.getcwd(), 'cookie_jingdong.txt')  # 获取当前工作目录
+    if os.path.exists(cookie_file):
+        os.remove(cookie_file)
+    cookie_file = os.path.join(os.getcwd(), 'cookie_manmanbuy.txt')  # 获取当前工作目录
+    if os.path.exists(cookie_file):
+        os.remove(cookie_file)
+    cookie_file = os.path.join(os.getcwd(), 'cookie_taobao.txt')  # 获取当前工作目录
+    if os.path.exists(cookie_file):
+        os.remove(cookie_file)
+    cookie_file = os.path.join(os.getcwd(), 'cookie_weipinhui.txt')  # 获取当前工作目录
+    if os.path.exists(cookie_file):
+        os.remove(cookie_file)
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # 如果你想不打开浏览器界面，可以启用这一行
+    # 禁用检测 WebDriver 的标志
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    # 伪装 User-Agent
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    # 创建 WebDriver 实例
+    driver = webdriver.Chrome(options=chrome_options)
+    taobao_url = 'https://login.taobao.com/'
+    cookie_file_taobao = 'cookie_taobao.txt'
+    if not os.path.exists(cookie_file_taobao):
+        driver.get(taobao_url)
+        time.sleep(60)
+        cookies = driver.get_cookies()
+        with open(cookie_file_taobao, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_file_taobao.txt")
+    jingdong_url = 'https://passport.jd.com/new/login.aspx'
+    cookie_file_jingdong = 'cookie_jingdong.txt'
+    if not os.path.exists(cookie_file_jingdong):
+        driver.get(jingdong_url)
+        time.sleep(60)
+        cookies = driver.get_cookies()
+        with open(cookie_file_jingdong, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_file_jingdong.txt")
+    weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
+    cookie_file_weipinhui = 'cookie_weipinhui.txt'
+    if not os.path.exists(cookie_file_weipinhui):
+        driver.get(weipinhui_url)
+        # 等待手动登录完成
+        time.sleep(60)
+        # 获取当前的 cookies 并保存到文件
+        cookies = driver.get_cookies()
+        with open(cookie_file_weipinhui, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
+        # 如果 cookie 文件不存在，则执行登录操作
+    cookie_file = 'cookie_manmanbuy.txt'
+    if not os.path.exists(cookie_file):
+        # 启动浏览器并打开登录页面
+        driver.get('https://home.manmanbuy.com/login.aspx')
+        # 等待页面加载
+        time.sleep(60)
+        # 获取当前的 cookies 并保存到文件
+        cookies = driver.get_cookies()
+        with open(cookie_file, 'w') as f:
+            json.dump(cookies, f)
+        print("Cookies 已保存到文件：cookie_manmanbuy.txt")
+    return JsonResponse({'has_preferences': True, 'cookie_file': cookie_file})
 
 
 # 保存用户喜好
@@ -369,6 +479,8 @@ def save_user_preferences(request):
             data = json.loads(request.body)
             username = data.get('username')
             preferences = data.get('preferences')
+            print(username)
+            print(preferences)
 
             if not username or not preferences:
                 return JsonResponse({'success': False, 'message': '喜好不能为空'})
@@ -383,12 +495,73 @@ def save_user_preferences(request):
 
             invalid_preferences = [pref for pref in preferences if pref not in allowed_categories]
             if invalid_preferences:
+                print(invalid_preferences)
                 return JsonResponse({'success': False, 'message': f'无效的喜好类别: {", ".join(invalid_preferences)}'})
             # 清除原有喜好，保存新的喜好
             with connection.cursor() as cursor:
                 # 首先删除该用户之前的所有喜好记录
                 cursor.execute("DELETE FROM user_preferences WHERE username = %s", [username])
 
+                # 插入新的喜好记录
+                for pref in preferences:
+                    cursor.execute("""
+                        INSERT INTO user_preferences (username, category)
+                        VALUES (%s, %s)
+                    """, [username, pref])
+
+            return JsonResponse({'success': True, 'message': '喜好保存成功'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'保存失败: {str(e)}'})
+    else:
+        return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+@api_view(['POST'])
+def delete_user_preferences(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            preferences = data.get('preferences')
+
+            with connection.cursor() as cursor:
+                # 首先删除该用户之前的所有喜好记录
+                cursor.execute("DELETE FROM user_preferences WHERE username = %s and category = %s", [username,preferences])
+            return JsonResponse({'success': True, 'message': '喜好删除成功'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'保存失败: {str(e)}'})
+    else:
+        return JsonResponse({'success': False, 'message': '请求方法错误'})
+
+# 保存用户喜好
+@api_view(['POST'])
+def append_user_preferences(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            preferences = data.get('preferences')
+            print(preferences)
+            print(username)
+            print(preferences)
+
+            if not username or not preferences:
+                return JsonResponse({'success': False, 'message': '喜好不能为空'})
+
+            # 验证类别是否在允许的类别内
+            allowed_categories = [
+                '电脑', '配件', '办公', '文具', '工业', '商业', '农业', '家电', '手机', '通信',
+                '数码', '家具', '家装', '家居', '厨具', '女装', '男装', '内衣', '配饰', '女鞋', '男鞋',
+                '运动', '户外', '汽车', '珠宝', '文玩', '箱包', '食品', '生鲜', '酒类', '健康', '母婴',
+                '童装', '玩具', '宠物', '美妆', '个户', '家清', '香氛', '娱乐', '图书', '乐器', '鲜花'
+            ]
+
+            invalid_preferences = [pref for pref in preferences if pref not in allowed_categories]
+            if invalid_preferences:
+                print('有类别无效')
+                print(invalid_preferences)
+                return JsonResponse({'success': False, 'message': f'无效的喜好类别: {", ".join(invalid_preferences)}'})
+            # 清除原有喜好，保存新的喜好
+            with connection.cursor() as cursor:
                 # 插入新的喜好记录
                 for pref in preferences:
                     cursor.execute("""
@@ -555,283 +728,332 @@ def unstar_goods(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': '数据库错误', 'details': str(e)}, status=500)
 
+import re
 
+# 用于提取价格中的数字
+def extract_price(price_str):
+    # 提取价格中的数字部分，如果没有数字，则返回一个很大的数
+    match = re.search(r'\d+(\.\d+)?', price_str)
+    return float(match.group(0)) if match else float('inf')
+
+# 对商品列表按价格排序
+def sort_by_price(goods):
+    return sorted(goods, key=lambda x: extract_price(x['price']))
 
 @api_view(['POST'])
 def search(request):
     username = request.data.get('username')
     searchQuery = request.data.get('searchQuery')
-    goods = []
+    print(username)
+    print(searchQuery)
+    taobao_goods = []
+    jingdong_goods = []
+    weipinhui_goods = []
     words = jieba.lcut(searchQuery)  # 返回一个列表
     print("分词结果:", words)
     # 如果需要用空格连接分词结果
     searchQuery = " ".join(words)
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT app FROM UserApps WHERE username = %s", [username])
-            result = cursor.fetchone()
+    # 配置Selenium选项
+    options = Options()
+    options.add_experimental_option("excludeSwitches", ['enable-automation'])
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=15360,8640")
+    options.add_argument("--headless")
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(options=options)
+    # 设置网页缩放比例为 25%
+    driver.execute_script("document.body.style.zoom='25%'")
+    """抓取商品信息"""
+    encoded_keyword = urllib.parse.quote(searchQuery)
+    base_url = f"https://uland.taobao.com/sem/tbsearch?clk1=b27114e13eaf50a5b4b3472c3265ec77&keyword={encoded_keyword}&localImgKey=&q={encoded_keyword}&refpid=mm_2898300158_3078300397_115665800437&tab=all&upsId=b27114e13eaf50a5b4b3472c3265ec77"
+    page = 1
+    total_count = 0  # 用于统计已抓取的商品数
 
-        if result:
-            if(result[0] == 'taobao'):
-                # 配置Selenium选项
-                options = Options()
-                options.add_experimental_option("excludeSwitches", ['enable-automation'])
-                driver = webdriver.Chrome(options=options)
-                driver.maximize_window()
-                wait = WebDriverWait(driver, 15)
-                """抓取商品信息"""
-                encoded_keyword = urllib.parse.quote(searchQuery)
-                base_url = f"https://uland.taobao.com/sem/tbsearch?clk1=b27114e13eaf50a5b4b3472c3265ec77&keyword={encoded_keyword}&localImgKey=&q={encoded_keyword}&refpid=mm_2898300158_3078300397_115665800437&tab=all&upsId=b27114e13eaf50a5b4b3472c3265ec77"
-                page = 1
-                total_count = 0  # 用于统计已抓取的商品数
+    while total_count < 48:  # 限制总共抓取 54个商品
+        url = f"{base_url}&page={page}"
+        print(f"正在抓取第 {page} 页: {url}")
+        driver.get(url)
+        driver.execute_script("document.body.style.zoom='25%'")
+        count = 1  # 每页商品从 data-spm=1 开始
+        time.sleep(2)  # 等待页面加载
 
-                while total_count < 1:  # 限制总共抓取 1000 个商品
-                    url = f"{base_url}&page={page}"
-                    print(f"正在抓取第 {page} 页: {url}")
-                    driver.get(url)
-                    count = 1  # 每页商品从 data-spm=1 开始
+        scroll_position = 0  # 记录滚动位置
 
-                    while total_count < 1000:  # 每页抓取商品
-                        html = driver.page_source
-                        doc = pq(html)
-                        item = doc(f'a[data-spm="{count}"]')
+        while total_count < 48:  # 每页抓取商品
+            html = driver.page_source
+            doc = pq(html)
+            item = doc(f'a[data-spm="{count}"]')
 
-                        if not item:
-                            print(f"未找到商品 {count}，滚动页面加载...")
-                            driver.execute_script("window.scrollBy(0, 600);")
-                            time.sleep(0.5)
-                            html = driver.page_source
-                            doc = pq(html)
-                            item = doc(f'a[data-spm="{count}"]')
-                            if not item:
-                                print("到达页面底部")
-                                break  # 跳出当前页面的循环，尝试下一页
+            if not item:
+                print(f"未找到商品 {count}，滚动页面加载...")
+                scroll_position += 600
+                driver.execute_script(f"window.scrollTo(0, {scroll_position});")
+                time.sleep(1)
+                html = driver.page_source
+                doc = pq(html)
+                item = doc(f'a[data-spm="{count}"]')
+                if not item:
+                    print("到达页面底部")
+                    break  # 跳出当前页面的循环，尝试下一页
 
-                        try:
-                            # 提取商品信息
-                            title = item.find('.Title--title--jCOPvpf').text()
-                            product_url = item.attr('href')
-                            img_url = item.find('img').attr('src') or ''
-                            price_int = item.find('.Price--priceInt--ZlsSi_M').text() or "0"
-                            price_float = item.find('.Price--priceFloat--h2RR0RK').text() or "00"
-                            price = f"{price_int}.{price_float}"
-                            location = item.find('.Price--procity--_7Vt3mX').text()
-                            shop = item.find('.ShopInfo--shopName--rg6mGmy').text()
-                            post_text = item.find('.SalesPoint--subIconWrapper--s6vanNY').attr('title') or ""
-                            isPostFree = 1 if "包邮" in post_text else 0
+            try:
+                # 提取商品信息
+                title = item.find('.Title--title--jCOPvpf').text()
+                product_url = item.attr('href')
+                img_element = item.find('.MainPic--mainPicWrapper--iv9Yv90')
 
-                            product = {
-                                'title': title,
-                                'price': price,
-                                'location': location,
-                                'shop': shop,
-                                'isPostFree': isPostFree,
-                                'product_url': product_url,
-                                'img_url': img_url
-                            }
-                            goods.append(product)
-                            print(f"商品 {total_count + 1} 数据已保存: {product}")
-                            total_count += 1
+                # 等待 img_url 不为空，最多重试 3 次
+                max_retries = 3  # 最大重试次数
+                retries = 0
+                img_url = ''
+                scroll_step = 400  # 每次滑动的像素数
 
-                        except Exception as e:
-                            print(f"商品 {count} 抓取失败: {e}")
+                while not img_url and retries < max_retries:
+                    img_url = img_element.find('img').attr('src') or ''
+                    if not img_url:
+                        print(f"图片 URL 为空，第 {retries + 1} 次重试，向下滑动...")
+                        scroll_position += scroll_step
+                        driver.execute_script(f"window.scrollTo(0, {scroll_position});")  # 向下滑动
+                        time.sleep(1)  # 等待加载
+                        retries += 1
 
-                        count += 1  # 尝试抓取下一个商品
+                if not img_url:
+                    print("图片 URL 仍为空，跳过该商品。")
+                    count += 1  # 跳过当前商品，尝试下一个
+                    continue
 
-                    if count <= 1:  # 如果第一页没有商品，则说明没有更多页面
-                        print("未能获取任何商品，停止抓取。")
-                        break
+                price_int = item.find('.Price--priceInt--ZlsSi_M').text() or "0"
+                price_float = item.find('.Price--priceFloat--h2RR0RK').text() or "00"
+                price = f"{price_int}{price_float}"
+                if '?' in price or price == "0" or '待' in price:
+                    continue
+                location = item.find('.Price--procity--_7Vt3mX').text()
+                shop = item.find('.ShopInfo--shopName--rg6mGmy').text()
+                post_text = item.find('.SalesPoint--subIconWrapper--s6vanNY').attr('title') or ""
+                isPostFree = 1 if "包邮" in post_text else 0
 
-                    page += 1  # 切换到下一页
-                    if page > 30:
-                        break
+                product = {
+                    'title': title,
+                    'price': price,
+                    'location': location,
+                    'shop': shop,
+                    'isPostFree': isPostFree,
+                    'product_url': product_url,
+                    'img_url': img_url
+                }
+                taobao_goods.append(product)
+                print(f"商品 {total_count + 1} 数据已保存: {product}")
+                total_count += 1
 
-                print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
-                driver.quit()
-                return Response({
-                    "total_goods": len(goods),
-                    "goods": goods
-                })
-            elif (result[0] == 'jingdong'):
-                # 配置Selenium选项
-                options = Options()
-                options.add_experimental_option("excludeSwitches", ['enable-automation'])
-                driver = webdriver.Chrome(options=options)
-                driver.maximize_window()
-                wait = WebDriverWait(driver, 15)
-                """抓取商品信息"""
-                base_url = f"https://re.jd.com/search?keyword={searchQuery}&enc=utf-8"
-                page = 1
-                total_count = 0  # 用于统计已抓取的商品数
+                # 每爬取 10 个商品后，向下翻动页面
+                if count % 30 == 0:
+                    scroll_position += 800
+                    driver.execute_script(f"window.scrollTo(0, {scroll_position});")
+                    time.sleep(1)
 
-                while total_count < 1000:  # 限制总共抓取 1000 个商品
-                    url = f"{base_url}&page={page}"
-                    print(url)
-                    print(f"正在抓取第 {page} 页: {url}")
-                    driver.get(url)
+            except Exception as e:
+                print(f"商品 {count} 抓取失败: {e}")
 
-                    time.sleep(3)  # 等待页面加载
+            count += 1  # 尝试抓取下一个商品
+
+        if count <= 1:  # 如果第一页没有商品，则说明没有更多页面
+            print("未能获取任何商品，停止抓取。")
+            break
+
+        page += 1  # 切换到下一页
+        if page > 5:
+            break
+
+    print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+
+    """抓取商品信息"""
+    base_url = f"https://re.jd.com/search?keyword={searchQuery}&enc=utf-8"
+    page = 1
+    total_count = 0  # 用于统计已抓取的商品数
+
+    while total_count < 48:  # 限制总共抓取 48 个商品
+        url = f"{base_url}&page={page}"
+        print(url)
+        print(f"正在抓取第 {page} 页: {url}")
+        driver.get(url)
+        driver.execute_script("document.body.style.zoom='25%'")
+
+        time.sleep(2)  # 等待页面加载
+        html = driver.page_source
+        doc = pq(html)
+
+        # 提取每个商品信息
+        items = doc('.li_cen').items()
+        for item in items:
+            try:
+                # 提取商品信息
+                title = item.find('.commodity_tit').text()
+                product_url = item.find('.pic a').attr('href')
+                if product_url and not product_url.startswith("http"):
+                    product_url = "https:" + product_url
+
+                img_url = item.find('.pic img.img_k').attr('src') or ''
+                if img_url and not img_url.startswith("http"):
+                    img_url = "https:" + img_url
+
+                # 如果 img_url 为空，尝试翻动一次页面并重新获取
+                if not img_url:
+                    print("图片 URL 为空，尝试翻动页面...")
+                    driver.execute_script("window.scrollBy(0, 600);")  # 向下翻动 600 像素
+                    time.sleep(2)  # 等待加载
                     html = driver.page_source
                     doc = pq(html)
+                    img_url = item.find('.pic img.img_k').attr('src') or ''
+                    if img_url and not img_url.startswith("http"):
+                        img_url = "https:" + img_url
 
-                    # 提取每个商品信息
-                    items = doc('.li_cen').items()
-                    for item in items:
-                        try:
-                            # 提取商品信息
-                            title = item.find('.commodity_tit').text()
-                            product_url = item.find('.pic a').attr('href')
-                            if product_url and not product_url.startswith("http"):
-                                product_url = "https:" + product_url
+                # 如果仍然没有 img_url，则跳过该商品
+                if not img_url:
+                    print("图片 URL 仍为空，跳过该商品。")
+                    continue
 
-                            img_url = item.find('.pic img.img_k').attr('src') or ''
-                            if img_url and not img_url.startswith("http"):
-                                img_url = "https:" + img_url
+                price = item.find('.price').text().replace('￥', '').strip() or "0"
+                if '?' in price or price == "0":
+                    continue
+                isPostFree = 1  # 假设所有商品包邮（可以根据实际逻辑修改）
+                shop = "京东商城"  # 假设来源固定为京东
+                location = "未知"  # 网页中未提供位置字段
 
-                            price = item.find('.price').text().replace('¥', '').strip() or "0"
-                            isPostFree = 1  # 假设所有商品包邮（可以根据实际逻辑修改）
-                            shop = "京东商城"  # 假设来源固定为京东
-                            location = "未知"  # 网页中未提供位置字段
+                product = {
+                    'title': title,
+                    'price': price,
+                    'location': location,
+                    'shop': shop,
+                    'isPostFree': isPostFree,
+                    'product_url': product_url,
+                    'img_url': img_url
+                }
+                jingdong_goods.append(product)
+                print(f"商品 {total_count + 1} 数据已保存: {product}")
+                total_count += 1
 
-                            product = {
-                                'title': title,
-                                'price': price,
-                                'location': location,
-                                'shop': shop,
-                                'isPostFree': isPostFree,
-                                'product_url': product_url,
-                                'img_url': img_url
-                            }
-                            goods.append(product)
-                            print(f"商品 {total_count + 1} 数据已保存: {product}")
-                            total_count += 1
+                if total_count >= 48:
+                    break  # 达到抓取限制，停止
 
-                            if total_count >= 1000:
-                                break  # 达到抓取限制，停止
+            except Exception as e:
+                print(f"商品抓取失败: {e}")
 
-                        except Exception as e:
-                            print(f"商品抓取失败: {e}")
+        page += 1  # 切换到下一页
+        if page > 5:
+            break
 
-                    page += 1  # 切换到下一页
-                    if page > 30:
-                        break
+    print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
 
-                print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
-                driver.quit()
-                return Response({
-                    "total_goods": len(goods),
-                    "goods": goods
-                })
-            elif (result[0] == 'weipinhui'):
-                # 配置Selenium选项
-                options = Options()
-                options.add_experimental_option("excludeSwitches", ['enable-automation'])
-                driver = webdriver.Chrome(options=options)
-                driver.maximize_window()
-                wait = WebDriverWait(driver, 15)
-                print("开始抓取商品信息...")
-                weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
-                cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
-                if not os.path.exists(cookie_file_weipinhui):
-                    driver.get(weipinhui_url)
-                    # 等待手动登录完成
-                    time.sleep(60)
-                    # 获取当前的 cookies 并保存到文件
-                    cookies = driver.get_cookies()
-                    with open(cookie_file_weipinhui, 'w') as f:
-                        json.dump(cookies, f)
-                    print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
-                else:
-                    print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
-                    driver.get(weipinhui_url)
-                    with open(cookie_file_weipinhui, 'r') as f:
-                        cookies = json.load(f)
-                    for cookie in cookies:
-                        driver.add_cookie(cookie)
+    print("开始抓取商品信息...，唯品会")
+    weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
+    cookie_file_weipinhui = 'cookie_weipinhui.txt'
 
-                base_url = f"https://category.vip.com/suggest.php?keyword={searchQuery}"
-                page = 1
-                total_count = 0  # 统计已抓取的商品数
+    print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
+    driver.get(weipinhui_url)
+    with open(cookie_file_weipinhui, 'r') as f:
+        cookies = json.load(f)
+    for cookie in cookies:
+        driver.add_cookie(cookie)
 
-                while total_count < 1000:  # 限制总共抓取 1000 个商品
-                    url = f"{base_url}&page={page}"
-                    print(f"正在抓取第 {page} 页: {url}")
-                    driver.get(url)
-                    time.sleep(3)  # 等待页面加载
+    base_url = f"https://category.vip.com/suggest.php?keyword={searchQuery}"
+    page = 1
+    total_count = 0  # 统计已抓取的商品数
 
-                    # 解析页面 HTML
-                    html = driver.page_source
-                    doc = pq(html)
+    while total_count < 48:  # 限制总共抓取 48 个商品
+        url = f"{base_url}&page={page}"
+        print(f"正在抓取第 {page} 页: {url}")
+        driver.get(url)
+        driver.execute_script("document.body.style.zoom='25%'")
+        time.sleep(2)  # 等待页面加载
 
-                    # 提取商品信息
-                    items = doc('.c-goods-item').items()
-                    for item in items:
-                        try:
-                            # 提取标题
-                            title = (
-                                    item.find('.c-goods-item_name').text() or
-                                    item.find('.J-goods-item__img').attr('alt') or
-                                    '未知商品'
-                            ).strip()
+        # 解析页面 HTML
+        html = driver.page_source
+        doc = pq(html)
 
-                            # 提取价格
-                            price = (
-                                    item.find('.c-goods-item__sale-price').text() or "0"
-                            ).replace('¥', '').strip()
+        # 提取商品信息
+        items = doc('.c-goods-item').items()
+        for item in items:
+            try:
+                # 提取标题
+                title = (
+                        item.find('.c-goods-item_name').text() or
+                        item.find('.J-goods-item__img').attr('alt') or
+                        '未知商品'
+                ).strip()
 
-                            # 提取商品链接
-                            product_url = item.find('a').attr('href')
-                            if product_url and not product_url.startswith("http"):
-                                product_url = "https:" + product_url
+                # 提取价格
+                price = (
+                        item.find('.c-goods-item__sale-price').text() or "0"
+                ).replace('¥', '').strip()
+                if '?' in price or price == "0":
+                    continue
+                # 提取商品链接
+                product_url = item.find('a').attr('href')
+                if product_url and not product_url.startswith("http"):
+                    product_url = "https:" + product_url
 
-                            # 提取图片链接
-                            img_url = item.find('.J-goods-item__img').attr('data-original') or item.find(
-                                '.J-goods-item_img').attr('src')
-                            if img_url and not img_url.startswith("http"):
-                                img_url = "https:" + img_url
+                # 提取图片链接
+                img_url = item.find('.J-goods-item__img').attr('data-original') or item.find(
+                    '.J-goods-item_img').attr('src')
+                if img_url and not img_url.startswith("http"):
+                    img_url = "https:" + img_url
 
-                            # 设置包邮信息为 0（未提供包邮信息）
-                            isPostFree = 0
+                # 设置包邮信息为 0（未提供包邮信息）
+                isPostFree = 0
 
-                            # 设置店铺和位置默认值
-                            shop = "唯品会"
-                            location = "未知"
+                # 设置店铺和位置默认值
+                shop = "唯品会"
+                location = "未知"
 
-                            # 组合商品信息
-                            product = {
-                                'title': title,
-                                'price': price,
-                                'location': location,
-                                'shop': shop,
-                                'isPostFree': isPostFree,
-                                'product_url': product_url,
-                                'img_url': img_url
-                            }
-                            goods.append(product)
-                            print(f"商品 {total_count + 1} 数据已保存: {product}")
-                            total_count += 1
+                # 组合商品信息
+                product = {
+                    'title': title,
+                    'price': price,
+                    'location': location,
+                    'shop': shop,
+                    'isPostFree': isPostFree,
+                    'product_url': product_url,
+                    'img_url': img_url
+                }
+                weipinhui_goods.append(product)
+                print(f"商品 {total_count + 1} 数据已保存: {product}")
+                total_count += 1
 
-                            if total_count >= 1000:
-                                break  # 达到抓取限制，停止
+                if total_count >= 48:
+                    break  # 达到抓取限制，停止
 
-                        except Exception as e:
-                            print(f"商品抓取失败: {e}")
+            except Exception as e:
+                print(f"商品抓取失败: {e}")
 
-                    page += 1  # 切换到下一页
-                    if page > 30:
-                        break
+        page += 1  # 切换到下一页
+        if page > 5:
+            break
 
-                print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
-                driver.quit()
-            return Response({
-                "total_goods": len(goods),
-                "goods": goods
-            })
-        else:
-            return Response({'error': 'Username not found'}, status=404)
-    except Exception as e:
-        # 捕获并返回错误信息
-        return Response({'error': 'Database error', 'details': str(e)}, status=500)
+    print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+    driver.quit()
+    # 排序并找到最便宜的商品
+    taobao_goods = sort_by_price(taobao_goods)
+    jingdong_goods = sort_by_price(jingdong_goods)
+    weipinhui_goods = sort_by_price(weipinhui_goods)
+
+    # 找到所有商品列表中的所有商品
+    all_goods = taobao_goods + jingdong_goods + weipinhui_goods
+
+    # 按价格排序
+    all_goods_sorted = sorted(all_goods, key=lambda x: extract_price(x['price']))
+
+    # 获取最便宜的六个商品
+    priceless_products = all_goods_sorted[:6]
+    return Response({
+        "total_taobao_goods": len(taobao_goods),
+        "total_jingdong_goods": len(jingdong_goods),
+        "total_weipinhui_goods": len(weipinhui_goods),
+        "taobao_goods": taobao_goods,
+        "jingdong_goods":jingdong_goods,
+        "weipinhui_goods":weipinhui_goods,
+        "priceless_product": priceless_products
+    })
+
 # 找到价格最小的商品
 def find_cheapest_good(goods_list, source):
     """将价格最小的商品与来源封装"""
@@ -856,22 +1078,30 @@ def price_compare(request):
     goods_jingdong = []
     goods_weipinhui = []
     try:
+        # 配置Selenium选项
         options = Options()
         options.add_experimental_option("excludeSwitches", ['enable-automation'])
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=15360,8640")
+        #options.add_argument("--headless")
+        # 初始化 WebDriver
         driver = webdriver.Chrome(options=options)
-        driver.maximize_window()
-        wait = WebDriverWait(driver, 5)
-        """抓取商品信息"""
+        # 设置网页缩放比例为 25%
+        driver.execute_script("document.body.style.zoom='25%'")
         encoded_keyword = urllib.parse.quote(searchQuery)
         base_url = f"https://uland.taobao.com/sem/tbsearch?clk1=b27114e13eaf50a5b4b3472c3265ec77&keyword={encoded_keyword}&localImgKey=&q={encoded_keyword}&refpid=mm_2898300158_3078300397_115665800437&tab=all&upsId=b27114e13eaf50a5b4b3472c3265ec77"
         page = 1
         total_count = 0  # 用于统计已抓取的商品数
 
-        while total_count < 10:
+        while total_count < 10:  # 限制总共抓取 54个商品
             url = f"{base_url}&page={page}"
             print(f"正在抓取第 {page} 页: {url}")
             driver.get(url)
+            driver.execute_script("document.body.style.zoom='25%'")
             count = 1  # 每页商品从 data-spm=1 开始
+            time.sleep(2)  # 等待页面加载
+
+            scroll_position = 0  # 记录滚动位置
 
             while total_count < 10:  # 每页抓取商品
                 html = driver.page_source
@@ -880,8 +1110,9 @@ def price_compare(request):
 
                 if not item:
                     print(f"未找到商品 {count}，滚动页面加载...")
-                    driver.execute_script("window.scrollBy(0, 600);")
-                    time.sleep(0.5)
+                    scroll_position += 600
+                    driver.execute_script(f"window.scrollTo(0, {scroll_position});")
+                    time.sleep(1)
                     html = driver.page_source
                     doc = pq(html)
                     item = doc(f'a[data-spm="{count}"]')
@@ -893,10 +1124,33 @@ def price_compare(request):
                     # 提取商品信息
                     title = item.find('.Title--title--jCOPvpf').text()
                     product_url = item.attr('href')
-                    img_url = item.find('img').attr('src') or ''
+                    img_element = item.find('.MainPic--mainPicWrapper--iv9Yv90')
+
+                    # 等待 img_url 不为空，最多重试 3 次
+                    max_retries = 3  # 最大重试次数
+                    retries = 0
+                    img_url = ''
+                    scroll_step = 400  # 每次滑动的像素数
+
+                    while not img_url and retries < max_retries:
+                        img_url = img_element.find('img').attr('src') or ''
+                        if not img_url:
+                            print(f"图片 URL 为空，第 {retries + 1} 次重试，向下滑动...")
+                            scroll_position += scroll_step
+                            driver.execute_script(f"window.scrollTo(0, {scroll_position});")  # 向下滑动
+                            time.sleep(1)  # 等待加载
+                            retries += 1
+
+                    if not img_url:
+                        print("图片 URL 仍为空，跳过该商品。")
+                        count += 1  # 跳过当前商品，尝试下一个
+                        continue
+
                     price_int = item.find('.Price--priceInt--ZlsSi_M').text() or "0"
                     price_float = item.find('.Price--priceFloat--h2RR0RK').text() or "00"
-                    price = f"{price_int}.{price_float}".replace("..", ".")
+                    price = f"{price_int}{price_float}"
+                    if '?' in price or price == "0" or '待' in price:
+                        continue
                     location = item.find('.Price--procity--_7Vt3mX').text()
                     shop = item.find('.ShopInfo--shopName--rg6mGmy').text()
                     post_text = item.find('.SalesPoint--subIconWrapper--s6vanNY').attr('title') or ""
@@ -911,10 +1165,15 @@ def price_compare(request):
                         'product_url': product_url,
                         'img_url': img_url
                     }
-                    if "?" not in price:
-                        goods_taobao.append(product)
-                        print(f"商品 {total_count + 1} 数据已保存: {product}")
-                        total_count += 1
+                    goods_taobao.append(product)
+                    print(f"商品 {total_count + 1} 数据已保存: {product}")
+                    total_count += 1
+
+                    # 每爬取 10 个商品后，向下翻动页面
+                    if count % 30 == 0:
+                        scroll_position += 800
+                        driver.execute_script(f"window.scrollTo(0, {scroll_position});")
+                        time.sleep(1)
 
                 except Exception as e:
                     print(f"商品 {count} 抓取失败: {e}")
@@ -926,23 +1185,24 @@ def price_compare(request):
                 break
 
             page += 1  # 切换到下一页
-            if page > 30:
+            if page > 5:
                 break
 
-        print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
+            print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
 
-        """抓取商品信息"""
+            """抓取商品信息"""
         base_url = f"https://re.jd.com/search?keyword={searchQuery}&enc=utf-8"
         page = 1
         total_count = 0  # 用于统计已抓取的商品数
 
-        while total_count < 10:  # 限制总共抓取 1000 个商品
+        while total_count < 10:  # 限制总共抓取 10 个商品
             url = f"{base_url}&page={page}"
             print(url)
             print(f"正在抓取第 {page} 页: {url}")
             driver.get(url)
+            driver.execute_script("document.body.style.zoom='25%'")
 
-            time.sleep(3)  # 等待页面加载
+            time.sleep(2)  # 等待页面加载
             html = driver.page_source
             doc = pq(html)
 
@@ -960,7 +1220,25 @@ def price_compare(request):
                     if img_url and not img_url.startswith("http"):
                         img_url = "https:" + img_url
 
+                    # 如果 img_url 为空，尝试翻动一次页面并重新获取
+                    if not img_url:
+                        print("图片 URL 为空，尝试翻动页面...")
+                        driver.execute_script("window.scrollBy(0, 600);")  # 向下翻动 600 像素
+                        time.sleep(2)  # 等待加载
+                        html = driver.page_source
+                        doc = pq(html)
+                        img_url = item.find('.pic img.img_k').attr('src') or ''
+                        if img_url and not img_url.startswith("http"):
+                            img_url = "https:" + img_url
+
+                    # 如果仍然没有 img_url，则跳过该商品
+                    if not img_url:
+                        print("图片 URL 仍为空，跳过该商品。")
+                        continue
+
                     price = item.find('.price').text().replace('￥', '').strip() or "0"
+                    if '?' in price or price == "0":
+                        continue
                     isPostFree = 1  # 假设所有商品包邮（可以根据实际逻辑修改）
                     shop = "京东商城"  # 假设来源固定为京东
                     location = "未知"  # 网页中未提供位置字段
@@ -985,29 +1263,20 @@ def price_compare(request):
                     print(f"商品抓取失败: {e}")
 
             page += 1  # 切换到下一页
-            if page > 30:
+            if page > 5:
                 break
 
         print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
-        print("开始抓取商品信息...")
+        print("开始抓取商品信息...，唯品会")
         weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
-        cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
-        if not os.path.exists(cookie_file_weipinhui):
-            driver.get(weipinhui_url)
-            # 等待手动登录完成
-            time.sleep(60)
-            # 获取当前的 cookies 并保存到文件
-            cookies = driver.get_cookies()
-            with open(cookie_file_weipinhui, 'w') as f:
-                json.dump(cookies, f)
-            print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
-        else:
-            print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
-            driver.get(weipinhui_url)
-            with open(cookie_file_weipinhui, 'r') as f:
-                cookies = json.load(f)
-            for cookie in cookies:
-                driver.add_cookie(cookie)
+        cookie_file_weipinhui = 'cookie_weipinhui.txt'
+
+        print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
+        driver.get(weipinhui_url)
+        with open(cookie_file_weipinhui, 'r') as f:
+            cookies = json.load(f)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
 
         base_url = f"https://category.vip.com/suggest.php?keyword={searchQuery}"
         page = 1
@@ -1017,7 +1286,8 @@ def price_compare(request):
             url = f"{base_url}&page={page}"
             print(f"正在抓取第 {page} 页: {url}")
             driver.get(url)
-            time.sleep(3)  # 等待页面加载
+            driver.execute_script("document.body.style.zoom='25%'")
+            time.sleep(2)  # 等待页面加载
 
             # 解析页面 HTML
             html = driver.page_source
@@ -1038,7 +1308,8 @@ def price_compare(request):
                     price = (
                             item.find('.c-goods-item__sale-price').text() or "0"
                     ).replace('¥', '').strip()
-
+                    if '?' in price or price == "0":
+                        continue
                     # 提取商品链接
                     product_url = item.find('a').attr('href')
                     if product_url and not product_url.startswith("http"):
@@ -1078,7 +1349,7 @@ def price_compare(request):
                     print(f"商品抓取失败: {e}")
 
             page += 1  # 切换到下一页
-            if page > 30:
+            if page > 5:
                 break
 
         print(f"已抓取完成，总共抓取了 {total_count} 个商品。")
@@ -1107,6 +1378,7 @@ def price_compare(request):
     except Exception as e:
         # 捕获并返回错误信息
         return Response({'error': 'Database error', 'details': str(e)}, status=500)
+
 
 @api_view(['POST'])
 def get_category(request):
@@ -1148,14 +1420,6 @@ def get_category(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
-@api_view(['POST'])
-def starGood(request):
-
-    return True
-
-@api_view(['POST'])
-def notStarGood(request):
-    return True
 
 
 
@@ -1165,7 +1429,6 @@ def notStarGood(request):
 def fetchPriceData(request):
     shop = request.data.get('product_url')  # 使用 request.data 获取 POST 数据
     username = request.data.get('username')
-    print(shop)
     # 修复相对路径并确保正确编码
     parsed_url = urlparse(shop)
     if not parsed_url.scheme:
@@ -1179,7 +1442,7 @@ def fetchPriceData(request):
     # 打印修复后的 URL
     print("修复后的 URL:", shop)
     # 检查 cookie 文件是否存在
-    cookie_file = f'cookie_manmanbuy_{username}.txt'
+    cookie_file = 'cookie_manmanbuy.txt'
 
     # 设置 Chrome 启动选项
     chrome_options = Options()
@@ -1189,6 +1452,8 @@ def fetchPriceData(request):
     # 伪装 User-Agent
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+    chrome_options.add_argument("--window-size=1200,800")
+    chrome_options.add_argument("--force-device-scale-factor=1.0")
     chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
     # 创建 WebDriver 实例
     driver = webdriver.Chrome(options=chrome_options)
@@ -1207,100 +1472,62 @@ def fetchPriceData(request):
     )
 
     taobao_url = 'https://login.taobao.com/'
-    cookie_file_taobao = f'cookie_taobao_{username}.txt'
-    if not os.path.exists(cookie_file_taobao):
-        driver.get(taobao_url)
-        # 等待手动登录完成
-        time.sleep(60)
-        # 获取当前的 cookies 并保存到文件
-        cookies = driver.get_cookies()
-        with open(cookie_file_taobao, 'w') as f:
-            json.dump(cookies, f)
-        print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
-    else:
-        print("cookie_file_taobao.txt 已存在，跳过登录步骤。")
-        driver.get(taobao_url)
-        with open(cookie_file_taobao, 'r') as f:
-            cookies = json.load(f)
-        for cookie in cookies:
-            driver.add_cookie(cookie)
+    cookie_file_taobao = 'cookie_taobao.txt'
 
-    # jingdong_url = 'https://passport.jd.com/new/login.aspx'
-    # cookie_file_jingdong = f'cookie_jingdong_{username}.txt'
-    # if not os.path.exists(cookie_file_jingdong):
-    #     driver.get(jingdong_url)
-    #     # 等待手动登录完成
-    #     time.sleep(60)
-    #     # 获取当前的 cookies 并保存到文件
-    #     cookies = driver.get_cookies()
-    #     with open(cookie_file_jingdong, 'w') as f:
-    #         json.dump(cookies, f)
-    #     print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
-    # else:
-    #     print("cookie_file_jingdong.txt 已存在，跳过登录步骤。")
-    #     driver.get('https://www.jd.com/')
-    #     with open(cookie_file_jingdong, 'r') as f:
-    #         cookies = json.load(f)
-    #     for cookie in cookies:
-    #         driver.add_cookie(cookie)
+    print("cookie_file_taobao.txt 已存在，跳过登录步骤。")
+    driver.get(taobao_url)
+    with open(cookie_file_taobao, 'r') as f:
+        cookies = json.load(f)
+    for cookie in cookies:
+        driver.add_cookie(cookie)
 
-    cookie_file_weipinhui = f'cookie_weipinhui_{username}.txt'
+    jingdong_url = 'https://passport.jd.com/new/login.aspx'
+    cookie_file_jingdong = 'cookie_jingdong.txt'
+
+    print("cookie_file_jingdong.txt 已存在，跳过登录步骤。")
+    driver.get('https://www.jd.com/')
+    with open(cookie_file_jingdong, 'r') as f:
+        cookies = json.load(f)
+    for cookie in cookies:
+        driver.add_cookie(cookie)
+
+    cookie_file_weipinhui = 'cookie_weipinhui.txt'
     weipinhui_url = 'https://passport.vip.com/login?src=https%3A%2F%2Fcategory.vip.com%2Fsuggest.php%3Fkeyword%3D%25E7%258E%25A9%25E5%2585%25B7%26ff%3D235%257C12%257C1%257C1%26page%3D10%26tfs_url%3D%252F%252Fmapi.vip.com%252Fvips-mobile%252Frest%252Fshopping%252Fpc%252Fsearch%252Fproduct%252Frank'
-    if not os.path.exists(cookie_file_weipinhui):
-        driver.get(weipinhui_url)
-        # 等待手动登录完成
-        time.sleep(60)
-        # 获取当前的 cookies 并保存到文件
-        cookies = driver.get_cookies()
-        with open(cookie_file_weipinhui, 'w') as f:
-            json.dump(cookies, f)
-        print("Cookies 已保存到文件：cookie_file_weipinhui.txt")
-    else:
-        print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
-        driver.get(weipinhui_url)
-        with open(cookie_file_weipinhui, 'r') as f:
-            cookies = json.load(f)
-        for cookie in cookies:
-            driver.add_cookie(cookie)
+
+    print("cookie_file_weipinhui.txt 已存在，跳过登录步骤。")
+    driver.get(weipinhui_url)
+    with open(cookie_file_weipinhui, 'r') as f:
+        cookies = json.load(f)
+    for cookie in cookies:
+        driver.add_cookie(cookie)
     # 访问指定 URL
     driver.get(shop)
-    time.sleep(10) # 验证
+    shop2 = shop
+    time.sleep(2) # 验证
     # 获取页面的实际地址
     shop = driver.current_url
-    print(shop)
-    # 如果 cookie 文件不存在，则执行登录操作
-    if not os.path.exists(cookie_file):
-        # 启动浏览器并打开登录页面
-        driver.get('https://home.manmanbuy.com/login.aspx')
 
-        # 等待页面加载
-        time.sleep(60)
+    if "https://www.jd.com/?from=pc_item&reason=403" in shop:
+        shop = shop2
+        # return JsonResponse({'success': False, 'message': '暂未收录'})
+    print("cookie_manmanbuy.txt 已存在，跳过登录步骤。")
+    # 启动浏览器并打开登录页面
+    driver.get('https://home.manmanbuy.com/login.aspx')
 
-        # 获取当前的 cookies 并保存到文件
-        cookies = driver.get_cookies()
-        with open(cookie_file, 'w') as f:
-            json.dump(cookies, f)
-
-        print("Cookies 已保存到文件：cookie_manmanbuy.txt")
-    else:
-        print("cookie_manmanbuy.txt 已存在，跳过登录步骤。")
-        # 启动浏览器并打开登录页面
-        driver.get('https://home.manmanbuy.com/login.aspx')
-
-        # 等待页面加载
-        time.sleep(2)
-        # 读取保存的 cookies
-        with open(cookie_file, 'r') as f:
-            cookies = json.load(f)
-        # 添加 cookies
-        for cookie in cookies:
-            driver.add_cookie(cookie)
+    # 等待页面加载
+    time.sleep(0.5)
+    # 读取保存的 cookies
+    with open(cookie_file, 'r') as f:
+        cookies = json.load(f)
+    # 添加 cookies
+    for cookie in cookies:
+        driver.add_cookie(cookie)
 
     # 启动浏览器并打开历史最低价格页面
     driver.get(
         f'http://tool.manmanbuy.com/HistoryLowest.aspx')
     # 等待页面加载
-    time.sleep(2)
+    time.sleep(0.5)
 
     # 定位搜索框并清空内容
     search_box = driver.find_element(By.ID, "historykey")
@@ -1308,16 +1535,16 @@ def fetchPriceData(request):
 
     # 将 shop 字符串插入搜索框
     search_box.send_keys(shop)
-    time.sleep(2)  # 等待查询结果加载
+    time.sleep(1)  # 等待查询结果加载
 
     # 定位查询按钮并点击
     search_button = driver.find_element(By.ID, "searchHistory")
     search_button.click()
-    time.sleep(2)  # 等待查询结果加载
+    time.sleep(1)  # 等待查询结果加载
 
     # 滑动到底部以确保所有数据加载完成
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(5)
+    time.sleep(3)
     try:
         # 尝试查找 "暂未收录" 元素
         no_data_element = driver.find_element(By.XPATH, "//*[contains(text(), '暂未收录')]")
@@ -1341,7 +1568,6 @@ def fetchPriceData(request):
     for offset_x in range(-canvas_size['width'] // 2, canvas_size['width'] // 2, 36):
         Action.move_to_element(canvas).perform()
         Action.move_by_offset(offset_x, 0).perform()
-        time.sleep(1)
         try:
             # 从趋势图中提取文本
             text_element = driver.find_element(By.XPATH,

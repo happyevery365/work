@@ -21,12 +21,11 @@ from .views import register_user
 from .views import get_goods
 from .views import check_user_preferences
 from .views import save_user_preferences
+from .views import append_user_preferences
 from .views import fetchAppImages
 from .views import search
 from .views import get_category
 from .views import send_sms_code
-from .views import starGood
-from .views import notStarGood
 from .views import fetchPriceData
 from .views import price_compare
 from .views import change_password
@@ -38,6 +37,10 @@ from .views import get_preferrence_goods
 from .views import get_unseen_goods_count
 from .views import newChangedGoods
 from .views import oldChangedGoods
+from .views import check_user_not_preferences
+from .views import check_user_preference_category
+from .views import delete_user_preferences
+from .views import save_cookie
 
 urlpatterns = [
     path('api/login/', login_view, name='login_view'),  # 新增登录接口
@@ -45,11 +48,13 @@ urlpatterns = [
     path('api/get-goods/', get_goods, name='get_goods'),
     path('api/get-preferrencegoods/', get_preferrence_goods, name='get_preferrence_goods'),
     path('api/check-preferences/', check_user_preferences, name='check_user_preferences'),
+    path('api/check_user_preference_category/', check_user_preference_category, name='check_user_preference_category'),
+    path('api/check_user_not_preferences/', check_user_not_preferences, name='check_user_not_preferences'),
     path('api/save-preferences/', save_user_preferences, name='save_user_preferences'),
+    path('api/delete_user_preferences/', delete_user_preferences, name='delete_user_preferences'),
+    path('api/append-preferences/', append_user_preferences, name='append_user_preferences'),
     path('api/change-preferences/', change_preferences, name='change_preferences'),
     path('api/get-app-images/', fetchAppImages, name='fetch_app_images'),
-    path('api/starGood/', starGood, name='starGood'),
-    path('api/notStarGood/', notStarGood, name='notStarGood'),
     path('api/search/', search, name='search'),
     path('api/get_category/', get_category, name='get_category'),
     path('api/send_sms_code/', send_sms_code, name='send_sms_code'),
@@ -62,5 +67,6 @@ urlpatterns = [
     path('api/get-unseen-goods-count/', get_unseen_goods_count, name='get_unseen_goods_count'),
     path('api/newChangedGoods/', newChangedGoods, name='newChangedGoods'),
     path('api/oldChangedGoods/', oldChangedGoods, name='oldChangedGoods'),
+    path('api/save_cookie/', save_cookie, name='save_cookie'),
 ]
 

@@ -108,7 +108,7 @@ export default {
     // 获取价格历史图表
     async fetchPriceChart() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/fetchPriceData/`, {product_url: this.product.product_url, username:this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/fetchPriceData/`, {product_url: this.product.product_url, username:this.username});
         this.message = response.data.message;
         if (response.data.success) {
       // 假设响应的数据格式是一个日期和价格的元组列表
@@ -143,7 +143,7 @@ export default {
 },
     async searchIfStarred() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/searchIfStarred/`, {product_url: this.product.product_url, username: this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/searchIfStarred/`, {product_url: this.product.product_url, username: this.username});
         this.isStarred = response.data.isStarred;
       } catch (error) {
         console.error("请求失败:", error);
@@ -151,7 +151,7 @@ export default {
     },
     async starGood() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/star_goods/`, {product: this.product, username: this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/star_goods/`, {product: this.product, username: this.username});
         this.errormessage = response.data.message;
         this.isStarred = true;
       } catch (error) {
@@ -160,7 +160,7 @@ export default {
     },
     async unstarGood() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/unstar_goods/`, {product: this.product, username: this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/unstar_goods/`, {product: this.product, username: this.username});
         this.errormessage = response.data.message;
         this.isStarred = false;
       } catch (error) {

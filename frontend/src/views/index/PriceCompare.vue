@@ -172,7 +172,7 @@ export default {
       // 合并 searchQuery、brand 和 specification，使用空格分隔
       const combinedQuery = `${this.brand} ${this.searchQuery} ${this.specification}`.trim();
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/price_compare/`, {
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/price_compare/`, {
           searchQuery: combinedQuery,
           username: this.username,
         });
@@ -186,7 +186,7 @@ export default {
       }
     },
     async fetchAppImages() {
-      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
+      const response = await axios.get(`http://${this.ipAddress}:8080/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

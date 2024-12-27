@@ -71,7 +71,7 @@ export default {
       }
       this.errormessage = '';
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/change_password/`, {
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/change_password/`, {
           username: this.username,
           oldpassword: this.oldpassword,
           newpassword: this.newpassword,

@@ -74,14 +74,14 @@ export default {
     // 获取未查看商品的数量
     async fetchUnseenGoodsCount() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/get-unseen-goods-count/`,{username: this.username});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/get-unseen-goods-count/`,{username: this.username});
         this.unseenCount = response.data.unseen_count;  // 更新未查看商品数量
       } catch (error) {
         console.error("Error fetching unseen goods count:", error);
       }
     },
     async fetchAppImages() {
-      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
+      const response = await axios.get(`http://${this.ipAddress}:8080/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

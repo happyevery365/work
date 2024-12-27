@@ -71,7 +71,7 @@ export default {
     },
     async savePreferences() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/save-preferences/`, {
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/save-preferences/`, {
           username: this.username,
           preferences: this.selectedPreferences
         });

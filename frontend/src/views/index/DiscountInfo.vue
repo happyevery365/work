@@ -80,15 +80,15 @@ export default {
   },
   methods: {
     async newChangedGoods() {
-      const response = await axios.post(`http://${this.ipAddress}:8000/api/newChangedGoods/`, {username: this.username});
+      const response = await axios.post(`http://${this.ipAddress}:8080/api/newChangedGoods/`, {username: this.username});
       this.goods = response.data.goods;
     },
     async oldChangedGoods() {
-      const response = await axios.post(`http://${this.ipAddress}:8000/api/oldChangedGoods/`, {username: this.username});
+      const response = await axios.post(`http://${this.ipAddress}:8080/api/oldChangedGoods/`, {username: this.username});
       this.goods_old = response.data.goods;
     },
     async fetchAppImages() {
-      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
+      const response = await axios.get(`http://${this.ipAddress}:8080/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     goToPage(page) {

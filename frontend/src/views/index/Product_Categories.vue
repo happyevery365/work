@@ -86,7 +86,7 @@ export default {
   },
   methods: {
     async fetchAppImages() {
-      const response = await axios.get(`http://${this.ipAddress}:8000/api/get-app-images/`);
+      const response = await axios.get(`http://${this.ipAddress}:8080/api/get-app-images/`);
       this.appImages = response.data.appImages;
     },
     // 根据中文类别名称跳转到对应的英文页面

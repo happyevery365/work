@@ -2,38 +2,6 @@
   <div>
     <!-- 返回按钮 -->
     <button @click="goBack" class="back-button">返回</button>
-
-    <!-- 平台选择框 -->
-    <div class="platform-selection">
-      <div
-        class="platform-box"
-        :class="{'selected': selectedPlatform.TaoBao}"
-        @click="togglePlatform('TaoBao')"
-      >
-        淘宝
-      </div>
-      <div
-        class="platform-box"
-        :class="{'selected': selectedPlatform.JingDong}"
-        @click="togglePlatform('JingDong')"
-      >
-        京东
-      </div>
-      <div
-        class="platform-box"
-        :class="{'selected': selectedPlatform.PinDuoDuo}"
-        @click="togglePlatform('PinDuoDuo')"
-      >
-        拼多多
-      </div>
-      <div
-        class="platform-box"
-        :class="{'selected': selectedPlatform.TianMao}"
-        @click="togglePlatform('TianMao')"
-      >
-        天猫
-      </div>
-    </div>
   <div v-if="goods.length" class="products-grid">
     <div class="product-item" v-for="(item, index) in goods" :key="index" @click="goToDetailPage(item)">
       <img :src="item.img_url" alt="商品图片" class="product-image" />
@@ -76,8 +44,11 @@ export default {
   methods: {
     async fetchProducts() {
       try {
-        const response = await axios.post(`http://${this.ipAddress}:8000/api/get_category/`, {data: this.englishName});
+        const response = await axios.post(`http://${this.ipAddress}:8080/api/get_category/`, {data: this.englishName});
         this.goods = response.data.goods;
+        this.jingdong_goods = response.data.jingdong_goods;
+        this.weipinhui_goods = response.data.weipinhui_goods;
+        this.taobao_goods = response.data.taobao_goods;
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }
@@ -91,13 +62,11 @@ export default {
     },
     goToDetailPage(item) {
       // 构造目标页面 URL
-    const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(
-      this.username
-    )}&product=${encodeURIComponent(JSON.stringify(item))}`;
+      const detailPageUrl = `${window.location.origin}/DetailPage?username=${encodeURIComponent(this.username)}&product=${encodeURIComponent(JSON.stringify(item))}`;
 
-    // 在新窗口中打开目标页面
-    window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口;
-    }
+  // 在新窗口中打开目标页面
+  window.open(detailPageUrl, '_blank'); // '_blank' 表示新窗口;
+ },
   }
 };
 </script>
